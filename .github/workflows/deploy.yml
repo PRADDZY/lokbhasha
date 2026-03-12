@@ -1,0 +1,53 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [master, main]
+  workflow_dispatch:
+
+jobs:
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    env:
+      RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+
+    steps:
+      - name: Trigger Render deploy hook
+        if: ${{ env.RENDER_DEPLOY_HOOK_URL != '' }}
+        run: curl -sSf -X POST "$RENDER_DEPLOY_HOOK_URL"
+
+      - name: Skip backend deploy (no hook configured)
+        if: ${{ env.RENDER_DEPLOY_HOOK_URL == '' }}
+        run: echo "Skipping backend deploy because RENDER_DEPLOY_HOOK_URL is not set."
+
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    env:
+      VERCEL_DEPLOY_HOOK_URL: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+
+    steps:
+      - name: Trigger Vercel deploy hook
+        if: ${{ env.VERCEL_DEPLOY_HOOK_URL != '' }}
+        run: curl -sSf -X POST "$VERCEL_DEPLOY_HOOK_URL"
+
+      - name: Skip frontend deploy (no hook configured)
+        if: ${{ env.VERCEL_DEPLOY_HOOK_URL == '' }}
+        run: echo "Skipping frontend deploy because VERCEL_DEPLOY_HOOK_URL is not set."
+
+  deploy-summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [deploy-backend, deploy-frontend]
+    if: always()
+
+    steps:
+      - name: Print deployment summary
+        run: |
+          echo "Backend deploy job: ${{ needs.deploy-backend.result }}"
+          echo "Frontend deploy job: ${{ needs.deploy-frontend.result }}"
