@@ -185,6 +185,10 @@ docker build -f backend/Dockerfile -t lokbhasha-backend .
 docker push your-registry/lokbhasha-backend
 ```
 
+One-click deployment files included:
+- `render.yaml` for Render Blueprint deployments
+- `railway.json` for Railway Docker deployments
+
 Runtime environment variables:
 - `BACKEND_PORT` (default `5000`)
 - `BACKEND_CORS_ORIGINS` (comma-separated allowed origins)
