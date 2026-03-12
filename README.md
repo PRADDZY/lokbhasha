@@ -199,6 +199,15 @@ Procfile-based platforms can run:
 web: uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-5000}
 ```
 
+## Continuous Integration
+
+GitHub Actions workflow:
+- `.github/workflows/ci.yml`
+
+Checks on every push and pull request:
+- Backend unit and API contract tests
+- Frontend production build
+
 ## Roadmap
 
 ### Current MVP (Phase 1-9)
