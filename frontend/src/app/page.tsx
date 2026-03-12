@@ -1,68 +1,150 @@
-export default function Home() {
-  return (
-    <main className="min-h-screen bg-gradient-to-br from-white to-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">LokBhasha</h1>
-          <p className="text-xl text-gray-600">Making government language understandable</p>
-        </div>
+"use client"
 
-        <div className="bg-white rounded-lg shadow-lg p-8">
+import { useRouter } from 'next/navigation'
+import { startTransition, useState } from 'react'
+
+import { AnalysisResult, translateText, uploadPDF } from '@/lib/api'
+
+
+const RESULT_STORAGE_KEY = 'lokbhasha:last-result'
+
+export default function Home() {
+  const router = useRouter()
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [marathiText, setMarathiText] = useState('')
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+
+  const analyzeDocument = async () => {
+    if (!selectedFile && !marathiText.trim()) {
+      setError('Upload a PDF or paste Marathi text before running the analysis.')
+      return
+    }
+
+    setError('')
+    setIsLoading(true)
+
+    try {
+      let result: AnalysisResult
+
+      if (selectedFile) {
+        const uploadResult = await uploadPDF(selectedFile)
+        const translationResult = await translateText(uploadResult.text)
+        result = {
+          ...translationResult,
+          source: 'pdf',
+          extractionConfidence: uploadResult.confidence,
+        }
+      } else {
+        const translationResult = await translateText(marathiText.trim())
+        result = {
+          ...translationResult,
+          source: 'text',
+        }
+      }
+
+      window.sessionStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(result))
+      startTransition(() => router.push('/result'))
+    } catch (analysisError) {
+      const message = analysisError instanceof Error ? analysisError.message : 'Analysis failed.'
+      setError(message)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  return (
+    <main className="min-h-screen px-4 py-8 md:px-8 md:py-12">
+      <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        <section className="flex flex-col justify-between rounded-[2rem] border border-[var(--line)] bg-[rgba(255,250,241,0.6)] p-8 md:p-12">
+          <div className="space-y-8">
+            <div className="inline-flex w-fit items-center rounded-full border border-[var(--line)] bg-[rgba(255,250,241,0.85)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">
+              Civic language, made legible
+            </div>
+            <div className="space-y-4">
+              <h1 className="section-title max-w-3xl text-5xl leading-none md:text-7xl">
+                Translate dense Marathi circulars into clear public guidance.
+              </h1>
+              <p className="max-w-2xl text-lg leading-8 text-[var(--muted)] md:text-xl">
+                LokBhasha extracts text from circular PDFs, preserves important government terms,
+                and turns official language into readable English with actions people can follow.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-12 grid gap-4 md:grid-cols-3">
+            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5">
+              <p className="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">Input</p>
+              <p className="mt-3 text-lg font-semibold">PDF upload or pasted Marathi text</p>
+            </div>
+            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5">
+              <p className="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">Output</p>
+              <p className="mt-3 text-lg font-semibold">Translation, simplification, and key actions</p>
+            </div>
+            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5">
+              <p className="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">Focus</p>
+              <p className="mt-3 text-lg font-semibold">Government language that ordinary people can use</p>
+            </div>
+          </div>
+        </section>
+
+        <section className="paper-panel rounded-[2rem] p-6 md:p-8">
           <div className="space-y-6">
             <div>
-              <label className="block text-lg font-semibold text-gray-700 mb-4">
-                Upload Government Circular (PDF)
+              <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted)]">Analysis desk</p>
+              <h2 className="section-title mt-3 text-4xl">Run a circular through the pipeline</h2>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-dashed border-[var(--line)] bg-[var(--surface-strong)] p-5">
+              <label className="block text-sm font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+                Upload PDF
               </label>
               <input
                 type="file"
                 accept=".pdf"
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                onChange={(event) => setSelectedFile(event.target.files?.[0] ?? null)}
+                className="mt-4 block w-full text-sm text-[var(--muted)] file:mr-4 file:rounded-full file:border-0 file:bg-[var(--accent)] file:px-5 file:py-3 file:font-semibold file:text-white hover:file:opacity-90"
               />
+              <p className="mt-3 text-sm text-[var(--muted)]">
+                {selectedFile ? `Selected: ${selectedFile.name}` : 'Digital PDFs work immediately. Scanned PDFs use OCR when available.'}
+              </p>
             </div>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">or</span>
-              </div>
+            <div className="flex items-center gap-3 text-sm uppercase tracking-[0.24em] text-[var(--muted)]">
+              <span className="h-px flex-1 bg-[var(--line)]" />
+              or
+              <span className="h-px flex-1 bg-[var(--line)]" />
             </div>
 
             <div>
-              <label className="block text-lg font-semibold text-gray-700 mb-4">
-                Paste Marathi Text
+              <label className="block text-sm font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+                Paste Marathi text
               </label>
               <textarea
-                placeholder="Paste government circular text in Marathi..."
-                rows={6}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="सदर अधिसूचनेन्वये अर्ज सादर करावा..."
+                rows={8}
+                value={marathiText}
+                onChange={(event) => setMarathiText(event.target.value)}
+                className="mt-4 w-full rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] px-5 py-4 text-base leading-7 text-[var(--ink)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-soft)]"
               />
             </div>
 
-            <button className="w-full bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-200">
-              Analyze Circular
+            {error ? (
+              <div className="rounded-[1.25rem] border border-[rgba(140,55,28,0.18)] bg-[rgba(190,89,48,0.08)] px-4 py-3 text-sm text-[var(--accent)]">
+                {error}
+              </div>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={analyzeDocument}
+              disabled={isLoading}
+              className="w-full rounded-full bg-[var(--ink)] px-6 py-4 text-sm font-semibold uppercase tracking-[0.22em] text-white transition hover:translate-y-[-1px] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoading ? 'Analyzing circular...' : 'Analyze circular'}
             </button>
           </div>
-        </div>
-
-        <div className="mt-12 grid md:grid-cols-3 gap-6">
-          <div className="text-center">
-            <div className="text-3xl mb-2">📄</div>
-            <h3 className="font-semibold text-gray-900 mb-2">PDF Upload</h3>
-            <p className="text-gray-600">Extract text from PDFs and scanned documents</p>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl mb-2">🌐</div>
-            <h3 className="font-semibold text-gray-900 mb-2">Smart Translation</h3>
-            <p className="text-gray-600">Intelligent Marathi to English translation</p>
-          </div>
-          <div className="text-center">
-            <div className="text-3xl mb-2">✨</div>
-            <h3 className="font-semibold text-gray-900 mb-2">Simplification</h3>
-            <p className="text-gray-600">Convert complex text to simple language</p>
-          </div>
-        </div>
+        </section>
       </div>
     </main>
   )
