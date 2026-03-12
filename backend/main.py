@@ -4,12 +4,14 @@ Marathi Government Document Translator
 """
 
 from contextlib import suppress
+import os
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pathlib import Path
 from uuid import uuid4
 from typing import Any
+from dotenv import load_dotenv
 
 from actions import extract_actions
 from glossary import detect_glossary_terms
@@ -17,8 +19,24 @@ from simplifier import simplify_english_text
 from translator import translate_marathi_text
 
 
+load_dotenv()
+
+
 UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
+
+
+def _allowed_origins() -> list[str]:
+    configured = os.getenv("BACKEND_CORS_ORIGINS", "").strip()
+    if configured:
+        return [origin.strip() for origin in configured.split(",") if origin.strip()]
+
+    return [
+        "http://localhost:3000",
+        "http://localhost:5000",
+        "https://localhost:3000",
+        "https://vercel.app",
+    ]
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -27,17 +45,9 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# CORS configuration
-origins = [
-    "http://localhost:3000",
-    "http://localhost:5000",
-    "https://localhost:3000",
-    "https://vercel.app",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=_allowed_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -145,4 +155,4 @@ async def translate(request: TranslateRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("BACKEND_PORT", "5000")))

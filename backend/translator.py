@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import os
 
-import httpx
-
 
 MOCK_TRANSLATION_PREFIX = "[MOCK]"
 
@@ -62,6 +60,8 @@ def _extract_translation_text(response_payload: dict) -> str | None:
 
 
 def _lingo_translate(marathi_text: str, glossary_terms: dict[str, str], api_key: str) -> str:
+    import httpx
+
     base_url = os.getenv("LINGO_DEV_BASE_URL", "https://api.lingo.dev/v1").rstrip("/")
     endpoint = f"{base_url}/translate"
     prompt = build_translation_prompt(marathi_text, glossary_terms)
