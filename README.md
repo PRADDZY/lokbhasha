@@ -181,8 +181,18 @@ git push origin main
 ### Backend (Cloud Run / Render / Railway)
 ```bash
 # Build and push Docker image
-docker build -t lokbhasha-backend .
+docker build -f backend/Dockerfile -t lokbhasha-backend .
 docker push your-registry/lokbhasha-backend
+```
+
+Runtime environment variables:
+- `BACKEND_PORT` (default `5000`)
+- `BACKEND_CORS_ORIGINS` (comma-separated allowed origins)
+- `LINGO_DEV_USE_MOCK` (`true` for mock mode, `false` for real API attempts)
+
+Procfile-based platforms can run:
+```bash
+web: uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-5000}
 ```
 
 ## Roadmap
