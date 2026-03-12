@@ -10,8 +10,11 @@ from pydantic import BaseModel
 from pathlib import Path
 from uuid import uuid4
 
+from actions import extract_actions
 from glossary import detect_glossary_terms
 from pdf_parser import extract_pdf_text
+from simplifier import simplify_english_text
+from translator import translate_marathi_text
 
 
 UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
@@ -102,12 +105,15 @@ async def translate(request: TranslateRequest):
     """
     try:
         glossary_terms = detect_glossary_terms(request.marathi_text)
+        english_translation = translate_marathi_text(request.marathi_text, glossary_terms)
+        simplified_text = simplify_english_text(english_translation)
+        actions = extract_actions(simplified_text)
         
         return TranslateResponse(
             marathi=request.marathi_text,
-            english="[Translation not yet implemented]",
-            simplified="[Simplification not yet implemented]",
-            actions=[],
+            english=english_translation,
+            simplified=simplified_text,
+            actions=actions,
             glossary_terms=glossary_terms
         )
     except Exception as e:
