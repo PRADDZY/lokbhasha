@@ -60,7 +60,7 @@ lokbhasha/
 ## Setup & Installation
 
 ### Prerequisites
-- Python 3.10+
+- Python 3.11 or 3.12 recommended
 - Node.js 18+
 - Tesseract OCR (for scanned PDF support)
 
@@ -90,6 +90,12 @@ cp .env.example .env
 2. Add your Lingo.dev API key:
 ```
 LINGO_DEV_API_KEY=your_actual_api_key_here
+```
+
+3. Keep mock mode enabled until the real Lingo.dev integration is wired:
+```
+LINGO_DEV_USE_MOCK=true
+TESSERACT_LANG=mar+eng
 ```
 
 ## Running the Application
@@ -148,13 +154,13 @@ Translate Marathi text to English with all processing steps.
 ```json
 {
   "marathi": "सदर अधिसूचनेन्वये अर्ज सादर करावा",
-  "english": "Submit application as per this notification",
-  "simplified": "You must submit an application following these instructions",
+  "english": "[MOCK] English translation placeholder for: सदर अधिसूचनेन्वये अर्ज सादर करावा",
+  "simplified": "[PLAIN] English translation placeholder for: सदर अधिसूचनेन्वये अर्ज सादर करावा",
   "actions": [
     {
-      "action": "Submit application",
+      "action": "Submit application before March 31",
       "deadline": null,
-      "requirement": "As per notification"
+      "requirement": "Submit application before March 31"
     }
   ],
   "glossary_terms": {
