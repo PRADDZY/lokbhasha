@@ -9,10 +9,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pathlib import Path
 from uuid import uuid4
+from typing import Any
 
 from actions import extract_actions
 from glossary import detect_glossary_terms
-from pdf_parser import extract_pdf_text
 from simplifier import simplify_english_text
 from translator import translate_marathi_text
 
@@ -51,14 +51,25 @@ class TranslateResponse(BaseModel):
     marathi: str
     english: str
     simplified: str
-    actions: list
-    glossary_terms: dict
+    actions: list[dict[str, Any]]
+    glossary_terms: dict[str, str]
 
 
 class UploadResponse(BaseModel):
     text: str
-    glossary: dict
+    glossary: dict[str, str]
     confidence: float
+
+
+def _extract_pdf_text_safe(pdf_path: str):
+    try:
+        from pdf_parser import extract_pdf_text
+    except ImportError as exc:
+        raise RuntimeError(
+            "PDF extraction dependencies are missing. Install backend requirements to enable uploads."
+        ) from exc
+
+    return extract_pdf_text(pdf_path)
 
 # Health check
 @app.get("/health")
@@ -79,10 +90,14 @@ async def upload(file: UploadFile = File(...)):
         if Path(file.filename).suffix.lower() != ".pdf":
             raise HTTPException(status_code=400, detail="Only PDF uploads are supported.")
 
-        temp_path = UPLOADS_DIR / f"{uuid4().hex}.pdf"
-        temp_path.write_bytes(await file.read())
+        file_content = await file.read()
+        if not file_content:
+            raise HTTPException(status_code=400, detail="Uploaded PDF file is empty.")
 
-        extraction_result = extract_pdf_text(str(temp_path))
+        temp_path = UPLOADS_DIR / f"{uuid4().hex}.pdf"
+        temp_path.write_bytes(file_content)
+
+        extraction_result = _extract_pdf_text_safe(str(temp_path))
         glossary = detect_glossary_terms(extraction_result.text)
 
         return UploadResponse(
@@ -90,8 +105,12 @@ async def upload(file: UploadFile = File(...)):
             glossary=glossary,
             confidence=extraction_result.confidence,
         )
+    except HTTPException:
+        raise
+    except RuntimeError as runtime_error:
+        raise HTTPException(status_code=503, detail=str(runtime_error)) from runtime_error
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error processing PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
     finally:
         if temp_path:
             with suppress(FileNotFoundError):
@@ -104,6 +123,9 @@ async def translate(request: TranslateRequest):
     Translate Marathi text to English with full processing pipeline.
     """
     try:
+        if not request.marathi_text.strip():
+            raise HTTPException(status_code=400, detail="marathi_text cannot be empty.")
+
         glossary_terms = detect_glossary_terms(request.marathi_text)
         english_translation = translate_marathi_text(request.marathi_text, glossary_terms)
         simplified_text = simplify_english_text(english_translation)
@@ -116,8 +138,10 @@ async def translate(request: TranslateRequest):
             actions=actions,
             glossary_terms=glossary_terms
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error processing text: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error processing text: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
