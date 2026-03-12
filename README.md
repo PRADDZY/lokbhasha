@@ -204,6 +204,7 @@ web: uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-5000}
 GitHub Actions workflow:
 - `.github/workflows/ci.yml`
 - `.github/workflows/deploy.yml`
+- `.github/workflows/release.yml`
 
 Checks on every push and pull request:
 - Backend unit and API contract tests
@@ -222,6 +223,32 @@ Trigger behavior:
 Required GitHub secrets:
 - `RENDER_DEPLOY_HOOK_URL` for backend deploy hook
 - `VERCEL_DEPLOY_HOOK_URL` for frontend deploy hook
+
+## Release Management
+
+Manual release workflow:
+- `.github/workflows/release.yml`
+
+How to cut a release:
+1. Open Actions and run the `Release` workflow manually.
+2. Provide a semantic tag like `v0.5.0`.
+3. Provide a release title.
+4. Set pre-release mode when needed.
+
+The workflow validates the tag format, creates/pushes the tag, and publishes a GitHub release with generated notes.
+
+## Branch Protection
+
+Recommended branch protection for `master`:
+- Require pull request before merging
+- Require status checks to pass before merging
+- Require conversation resolution before merging
+- Restrict force pushes and branch deletion
+
+Recommended required status checks:
+- `Backend Tests`
+- `Backend Smoke API`
+- `Frontend Build`
 
 ## Roadmap
 
