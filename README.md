@@ -203,10 +203,25 @@ web: uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-5000}
 
 GitHub Actions workflow:
 - `.github/workflows/ci.yml`
+- `.github/workflows/deploy.yml`
 
 Checks on every push and pull request:
 - Backend unit and API contract tests
+- Backend smoke API check (`/health` and `/translate`)
 - Frontend production build
+
+## Deployment Automation
+
+Deployment workflow:
+- `.github/workflows/deploy.yml`
+
+Trigger behavior:
+- Runs automatically after the CI workflow succeeds on `master`/`main`
+- Can also be triggered manually with `workflow_dispatch`
+
+Required GitHub secrets:
+- `RENDER_DEPLOY_HOOK_URL` for backend deploy hook
+- `VERCEL_DEPLOY_HOOK_URL` for frontend deploy hook
 
 ## Roadmap
 
