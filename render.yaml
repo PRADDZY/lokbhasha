@@ -11,9 +11,5 @@ services:
         value: 5000
       - key: BACKEND_CORS_ORIGINS
         value: https://lokbhasha.vercel.app
-      - key: LINGO_DEV_USE_MOCK
-        value: true
-      - key: LINGO_DEV_API_KEY
-        sync: false
       - key: TESSERACT_LANG
         value: mar+eng

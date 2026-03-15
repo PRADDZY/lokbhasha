@@ -26,10 +26,10 @@ jobs:
           pip install -r backend/requirements.txt
 
       - name: Run backend tests
-        run: python -m unittest backend.tests.test_pipeline backend.tests.test_api_contract -v
+        run: python -m unittest discover -s backend/tests -v
 
   backend-smoke:
-    name: Backend Smoke API
+    name: Backend Smoke Extract API
     runs-on: ubuntu-latest
     needs: backend
 
@@ -49,7 +49,6 @@ jobs:
 
       - name: Start backend server
         env:
-          LINGO_DEV_USE_MOCK: "true"
           BACKEND_PORT: "5050"
         run: |
           cd backend
@@ -61,15 +60,14 @@ jobs:
           curl -sSf http://127.0.0.1:5050/health > /tmp/health.json
           python -c "import json; data=json.load(open('/tmp/health.json')); assert data.get('status') == 'ok'"
 
-      - name: Translate contract check
+      - name: Extract endpoint validation check
         run: |
-          curl -sSf -X POST http://127.0.0.1:5050/translate \
-            -H "Content-Type: application/json" \
-            -d '{"marathi_text":"sample text"}' > /tmp/translate.json
-          python -c "import json; data=json.load(open('/tmp/translate.json')); required=['marathi','english','simplified','actions','glossary_terms']; missing=[k for k in required if k not in data]; assert not missing, missing"
+          STATUS=$(curl -sS -o /tmp/extract.json -w "%{http_code}" -X POST http://127.0.0.1:5050/extract \
+            -F "file=@README.md;type=text/plain")
+          python -c "import json; status='''$STATUS'''; data=json.load(open('/tmp/extract.json')); assert status == '400', status; assert 'Only PDF uploads are supported' in data.get('detail', '')"
 
   frontend:
-    name: Frontend Build
+    name: Frontend Tests And Build
     runs-on: ubuntu-latest
 
     steps:
@@ -86,6 +84,10 @@ jobs:
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci
+
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm test
 
       - name: Build frontend
         working-directory: frontend
