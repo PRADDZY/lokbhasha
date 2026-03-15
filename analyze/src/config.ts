@@ -1,7 +1,6 @@
 import path from 'node:path'
 
 
-const DEFAULT_TARGET_LOCALES = ['hi', 'gu']
 const DEFAULT_ALLOWED_ORIGINS = ['http://localhost:3000']
 const DEFAULT_ANALYZE_PORT = 5001
 
@@ -45,20 +44,6 @@ export function getExtractionBackendUrl(): string {
 
 export function getGlossaryDatabasePath(): string {
   return process.env.GLOSSARY_DB_PATH || path.resolve(process.cwd(), '..', 'sqlite', 'glossary.sqlite3')
-}
-
-export function getTargetLocales(): string[] {
-  const configuredLocales = process.env.LINGODOTDEV_TARGET_LOCALES || process.env.LINGO_DEV_TARGET_LOCALES
-  if (!configuredLocales) {
-    return DEFAULT_TARGET_LOCALES
-  }
-
-  const locales = configuredLocales
-    .split(',')
-    .map((locale) => locale.trim())
-    .filter(Boolean)
-
-  return locales.length ? locales : DEFAULT_TARGET_LOCALES
 }
 
 export function getLingoApiKey(): string {

@@ -4,19 +4,28 @@ import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { analyzeMarathiDocument } from './analysis'
-import { getAnalyzeErrorStatus, handleAnalyzeFormData } from './analyze-route'
-import { getAllowedOrigins, getAnalyzePort, getGlossaryDatabasePath, getTargetLocales } from './config'
+import { analyzeMarathiDocument, generateAnalysisEnrichment } from './analysis'
+import { getAnalyzeErrorStatus, handleAnalyzeFormData, handleEnrichRequest } from './analyze-route'
+import { getAllowedOrigins, getAnalyzePort, getGlossaryDatabasePath } from './config'
 import { extractPdfText } from './extraction'
 import { detectGlossaryHits } from './glossary'
 import { createLingoClient } from './lingo'
-import type { AnalysisResult } from './types'
+import type { AnalysisCoreResult, AnalysisEnrichmentResult } from './types'
 
 
-type AnalyzeRequestHandler = (formData: FormData) => Promise<AnalysisResult>
+type AnalyzeRequestHandler = (formData: FormData) => Promise<AnalysisCoreResult>
+type EnrichRequestHandler = (
+  body: {
+    englishCanonical?: string
+    requestedLocales?: string[]
+    includePlainExplanation?: boolean
+    includeActions?: boolean
+  } | null | undefined
+) => Promise<AnalysisEnrichmentResult>
 
 type AnalyzeServerDependencies = {
   handleAnalyzeRequest?: AnalyzeRequestHandler
+  handleEnrichRequest?: EnrichRequestHandler
 }
 
 async function requestToFormData(request: FastifyRequest): Promise<FormData> {
@@ -60,7 +69,6 @@ async function requestToFormData(request: FastifyRequest): Promise<FormData> {
 
 export function createAnalyzeRequestHandler(): AnalyzeRequestHandler {
   const lingoClient = createLingoClient()
-  const targetLocales = getTargetLocales()
 
   return (formData) =>
     handleAnalyzeFormData(formData, {
@@ -70,7 +78,18 @@ export function createAnalyzeRequestHandler(): AnalyzeRequestHandler {
           detectGlossaryHits: (text) =>
             detectGlossaryHits(text, { databasePath: getGlossaryDatabasePath() }),
           lingoClient,
-          targetLocales,
+        }),
+    })
+}
+
+export function createEnrichRequestHandler(): EnrichRequestHandler {
+  const lingoClient = createLingoClient()
+
+  return (body) =>
+    handleEnrichRequest(body, {
+      generateAnalysisEnrichment: (input) =>
+        generateAnalysisEnrichment(input, {
+          lingoClient,
         }),
     })
 }
@@ -78,6 +97,7 @@ export function createAnalyzeRequestHandler(): AnalyzeRequestHandler {
 export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {}): FastifyInstance {
   const server = Fastify({ logger: false })
   const handleAnalyzeRequest = dependencies.handleAnalyzeRequest ?? createAnalyzeRequestHandler()
+  const enrichRequestHandler = dependencies.handleEnrichRequest ?? createEnrichRequestHandler()
 
   server.register(cors, {
     origin: getAllowedOrigins(),
@@ -93,10 +113,34 @@ export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {})
     })
   })
 
+  server.get('/enrich', async (_, reply) => {
+    return reply.code(405).send({
+      detail: 'Use POST /enrich with canonical English text and requested outputs.',
+    })
+  })
+
   server.post('/analyze', async (request, reply) => {
     try {
       const formData = await requestToFormData(request)
       const result = await handleAnalyzeRequest(formData)
+      return reply.send(result)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Analysis failed.'
+      const status = getAnalyzeErrorStatus(error)
+      return reply.code(status).send({ detail: message })
+    }
+  })
+
+  server.post('/enrich', async (request, reply) => {
+    try {
+      const result = await enrichRequestHandler(
+        (request.body as {
+          englishCanonical?: string
+          requestedLocales?: string[]
+          includePlainExplanation?: boolean
+          includeActions?: boolean
+        } | null) ?? null
+      )
       return reply.send(result)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Analysis failed.'

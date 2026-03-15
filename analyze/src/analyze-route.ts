@@ -1,21 +1,33 @@
-import { GlossaryDatabaseError } from './glossary'
-import { LingoConfigurationError } from './lingo'
-import type { AnalysisResult } from './types'
+import { GlossaryDatabaseError, LingoConfigurationError } from './errors'
+import type { AnalysisCoreResult, AnalysisEnrichmentRequest, AnalysisEnrichmentResult } from './types'
 
 
 export const ANALYZE_REQUEST_ERROR_MESSAGE = 'Upload a PDF or provide Marathi text before analyzing.'
+export const ENRICH_SELECTION_ERROR_MESSAGE = 'Request at least one optional output before generating enrichments.'
+export const ENRICH_TEXT_ERROR_MESSAGE = 'Provide canonical English text before generating enrichments.'
 
 type AnalyzeRouteDependencies = {
   analyzeMarathiDocument: (input: {
     marathiText: string
     source: 'pdf' | 'text'
     extractionConfidence?: number
-  }) => Promise<AnalysisResult>
+  }) => Promise<AnalysisCoreResult>
   extractPdfText: (file: File) => Promise<{ text: string; confidence: number }>
 }
 
+type EnrichRouteDependencies = {
+  generateAnalysisEnrichment: (input: AnalysisEnrichmentRequest) => Promise<AnalysisEnrichmentResult>
+}
+
 export function getAnalyzeErrorStatus(error: unknown): number {
-  if (error instanceof Error && error.message === ANALYZE_REQUEST_ERROR_MESSAGE) {
+  if (
+    error instanceof Error &&
+    (
+      error.message === ANALYZE_REQUEST_ERROR_MESSAGE ||
+      error.message === ENRICH_SELECTION_ERROR_MESSAGE ||
+      error.message === ENRICH_TEXT_ERROR_MESSAGE
+    )
+  ) {
     return 400
   }
 
@@ -44,7 +56,7 @@ export function getAnalyzeErrorStatus(error: unknown): number {
 export async function handleAnalyzeFormData(
   formData: FormData,
   dependencies: AnalyzeRouteDependencies
-): Promise<AnalysisResult> {
+): Promise<AnalysisCoreResult> {
   const uploadedFile = formData.get('file')
   const marathiText = String(formData.get('marathiText') || '').trim()
 
@@ -67,5 +79,32 @@ export async function handleAnalyzeFormData(
     marathiText: sourceText,
     source,
     extractionConfidence,
+  })
+}
+
+export async function handleEnrichRequest(
+  body: Partial<AnalysisEnrichmentRequest> | null | undefined,
+  dependencies: EnrichRouteDependencies
+): Promise<AnalysisEnrichmentResult> {
+  const englishCanonical = String(body?.englishCanonical || '').trim()
+  const requestedLocales = Array.isArray(body?.requestedLocales)
+    ? body.requestedLocales.map((locale) => String(locale).trim()).filter(Boolean)
+    : []
+  const includePlainExplanation = Boolean(body?.includePlainExplanation)
+  const includeActions = Boolean(body?.includeActions)
+
+  if (!englishCanonical) {
+    throw new Error(ENRICH_TEXT_ERROR_MESSAGE)
+  }
+
+  if (!requestedLocales.length && !includePlainExplanation && !includeActions) {
+    throw new Error(ENRICH_SELECTION_ERROR_MESSAGE)
+  }
+
+  return dependencies.generateAnalysisEnrichment({
+    englishCanonical,
+    requestedLocales,
+    includePlainExplanation,
+    includeActions,
   })
 }

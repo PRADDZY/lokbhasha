@@ -18,16 +18,25 @@ export type ActionItem = {
 
 export type AnalysisSource = 'pdf' | 'text'
 
-export type AnalysisResult = {
+export type AnalysisCoreResult = {
   source: AnalysisSource
   marathiText: string
   extractionConfidence?: number
   glossaryHits: GlossaryHit[]
-  terminologyHints: Record<string, string[]>
   englishCanonical: string
-  localizedText: Record<string, string>
-  simplifiedEnglish: string
-  actions: ActionItem[]
+}
+
+export type AnalysisEnrichmentRequest = {
+  englishCanonical: string
+  requestedLocales: string[]
+  includePlainExplanation: boolean
+  includeActions: boolean
+}
+
+export type AnalysisEnrichmentResult = {
+  localizedText?: Record<string, string>
+  simplifiedEnglish?: string
+  actions?: ActionItem[]
 }
 
 export type LingoClient = {
