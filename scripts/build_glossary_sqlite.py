@@ -3,19 +3,29 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+import re
 import sqlite3
-import sys
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-if str(ROOT_DIR) not in sys.path:
-    sys.path.insert(0, str(ROOT_DIR))
-
-from backend.dictionary import extract_primary_meaning, normalize_term
+WHITESPACE_PATTERN = re.compile(r"\s+")
 
 
 DEFAULT_SOURCE_PATH = ROOT_DIR / "dict" / "lingo_dev_mr_en.json"
 DEFAULT_OUTPUT_PATH = ROOT_DIR / "dict" / "glossary.sqlite3"
+
+
+def normalize_term(term: str) -> str:
+    cleaned = WHITESPACE_PATTERN.sub(" ", term.strip())
+    return cleaned.replace("\u200c", "").replace("\u200d", "")
+
+
+def extract_primary_meaning(english_text: str) -> str:
+    if not english_text:
+        return ""
+
+    primary = english_text.split(";", maxsplit=1)[0].strip()
+    return primary.lower()
 
 
 def _initialize_schema(connection: sqlite3.Connection) -> None:

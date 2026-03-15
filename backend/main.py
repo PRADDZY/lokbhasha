@@ -1,22 +1,15 @@
 """
 LokBhasha Backend - FastAPI Server
-Marathi Government Document Translator
+Marathi PDF Extraction Service
 """
 
 from contextlib import suppress
 import os
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from pathlib import Path
 from uuid import uuid4
-from typing import Any
 from dotenv import load_dotenv
-
-from actions import extract_actions
-from glossary import detect_glossary_terms
-from simplifier import simplify_english_text
-from translator import translate_marathi_text
 
 
 load_dotenv()
@@ -41,7 +34,7 @@ def _allowed_origins() -> list[str]:
 # Initialize FastAPI app
 app = FastAPI(
     title="LokBhasha API",
-    description="Government Marathi Document Translator",
+    description="Government Marathi PDF extraction service",
     version="0.1.0"
 )
 
@@ -52,29 +45,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Request/Response models
-class TranslateRequest(BaseModel):
-    marathi_text: str
-
-class TranslateResponse(BaseModel):
-    marathi: str
-    english: str
-    simplified: str
-    actions: list[dict[str, Any]]
-    glossary_terms: dict[str, str]
-
-
-class UploadResponse(BaseModel):
-    text: str
-    glossary: dict[str, str]
-    confidence: float
-
-
-class ExtractResponse(BaseModel):
-    text: str
-    confidence: float
-
 
 def _extract_pdf_text_safe(pdf_path: str):
     try:
@@ -121,53 +91,10 @@ async def _extract_uploaded_pdf(file: UploadFile) -> tuple[str, float]:
 async def health():
     return {"status": "ok"}
 
-# Upload endpoint (stub)
-@app.post("/upload", response_model=UploadResponse)
-async def upload(file: UploadFile = File(...)):
-    """
-    Upload a PDF file and extract Marathi text with glossary.
-    """
-    text, confidence = await _extract_uploaded_pdf(file)
-    glossary = detect_glossary_terms(text)
-
-    return UploadResponse(
-        text=text,
-        glossary=glossary,
-        confidence=confidence,
-    )
-
-
-@app.post("/extract", response_model=ExtractResponse)
+@app.post("/extract")
 async def extract(file: UploadFile = File(...)):
     text, confidence = await _extract_uploaded_pdf(file)
-    return ExtractResponse(text=text, confidence=confidence)
-
-# Translate endpoint (stub)
-@app.post("/translate", response_model=TranslateResponse)
-async def translate(request: TranslateRequest):
-    """
-    Translate Marathi text to English with full processing pipeline.
-    """
-    try:
-        if not request.marathi_text.strip():
-            raise HTTPException(status_code=400, detail="marathi_text cannot be empty.")
-
-        glossary_terms = detect_glossary_terms(request.marathi_text)
-        english_translation = translate_marathi_text(request.marathi_text, glossary_terms)
-        simplified_text = simplify_english_text(english_translation)
-        actions = extract_actions(simplified_text)
-        
-        return TranslateResponse(
-            marathi=request.marathi_text,
-            english=english_translation,
-            simplified=simplified_text,
-            actions=actions,
-            glossary_terms=glossary_terms
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing text: {str(e)}")
+    return {"text": text, "confidence": confidence}
 
 if __name__ == "__main__":
     import uvicorn

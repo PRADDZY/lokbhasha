@@ -179,8 +179,6 @@ Example response shape:
 }
 ```
 
-Legacy backend endpoints `/upload` and `/translate` still exist for compatibility and tests, but they are not the primary application flow.
-
 ## Deployment notes
 
 ### Backend
