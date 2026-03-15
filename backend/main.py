@@ -71,6 +71,11 @@ class UploadResponse(BaseModel):
     confidence: float
 
 
+class ExtractResponse(BaseModel):
+    text: str
+    confidence: float
+
+
 def _extract_pdf_text_safe(pdf_path: str):
     try:
         from pdf_parser import extract_pdf_text
@@ -81,17 +86,8 @@ def _extract_pdf_text_safe(pdf_path: str):
 
     return extract_pdf_text(pdf_path)
 
-# Health check
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
 
-# Upload endpoint (stub)
-@app.post("/upload", response_model=UploadResponse)
-async def upload(file: UploadFile = File(...)):
-    """
-    Upload a PDF file and extract Marathi text with glossary.
-    """
+async def _extract_uploaded_pdf(file: UploadFile) -> tuple[str, float]:
     temp_path: Path | None = None
     try:
         if not file.filename:
@@ -108,23 +104,43 @@ async def upload(file: UploadFile = File(...)):
         temp_path.write_bytes(file_content)
 
         extraction_result = _extract_pdf_text_safe(str(temp_path))
-        glossary = detect_glossary_terms(extraction_result.text)
-
-        return UploadResponse(
-            text=extraction_result.text,
-            glossary=glossary,
-            confidence=extraction_result.confidence,
-        )
+        return extraction_result.text, extraction_result.confidence
     except HTTPException:
         raise
     except RuntimeError as runtime_error:
         raise HTTPException(status_code=503, detail=str(runtime_error)) from runtime_error
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(e)}")
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error processing PDF: {str(exc)}") from exc
     finally:
         if temp_path:
             with suppress(FileNotFoundError):
                 temp_path.unlink()
+
+# Health check
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
+# Upload endpoint (stub)
+@app.post("/upload", response_model=UploadResponse)
+async def upload(file: UploadFile = File(...)):
+    """
+    Upload a PDF file and extract Marathi text with glossary.
+    """
+    text, confidence = await _extract_uploaded_pdf(file)
+    glossary = detect_glossary_terms(text)
+
+    return UploadResponse(
+        text=text,
+        glossary=glossary,
+        confidence=confidence,
+    )
+
+
+@app.post("/extract", response_model=ExtractResponse)
+async def extract(file: UploadFile = File(...)):
+    text, confidence = await _extract_uploaded_pdf(file)
+    return ExtractResponse(text=text, confidence=confidence)
 
 # Translate endpoint (stub)
 @app.post("/translate", response_model=TranslateResponse)

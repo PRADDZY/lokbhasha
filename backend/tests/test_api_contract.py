@@ -67,6 +67,24 @@ class APIContractTests(unittest.TestCase):
         self.assertIn("confidence", payload)
         self.assertIsInstance(payload["glossary"], dict)
 
+    @patch("main._extract_pdf_text_safe")
+    def test_extract_endpoint_returns_contract_shape(self, mock_extract):
+        class _Result:
+            text = "सदर अधिसूचनेन्वये अर्ज सादर करावा"
+            confidence = 0.91
+
+        mock_extract.return_value = _Result()
+
+        response = self.client.post(
+            "/extract",
+            files={"file": ("circular.pdf", b"%PDF-sample", "application/pdf")},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["text"], _Result.text)
+        self.assertEqual(payload["confidence"], _Result.confidence)
+
 
 if __name__ == "__main__":
     unittest.main()
