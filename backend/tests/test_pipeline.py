@@ -1,6 +1,9 @@
+import importlib
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -31,6 +34,26 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(len(actions), 1)
         self.assertEqual(actions[0]["action"], "Submit application before March 31")
         self.assertEqual(actions[0]["deadline"], "before March 31")
+
+    def test_pdf_parser_rejects_paths_outside_uploads_dir(self):
+        fake_image_module = SimpleNamespace(Image=object)
+        with patch.dict(
+            sys.modules,
+            {
+                "fitz": SimpleNamespace(Page=object, Document=object, Matrix=lambda *args: None),
+                "PIL": fake_image_module,
+                "PIL.Image": object,
+                "pytesseract": SimpleNamespace(image_to_string=lambda *args, **kwargs: ""),
+            },
+        ):
+            if "pdf_parser" in sys.modules:
+                del sys.modules["pdf_parser"]
+            pdf_parser = importlib.import_module("pdf_parser")
+
+        with self.assertRaises(RuntimeError) as error:
+            pdf_parser.extract_pdf_text(str(Path(__file__).resolve()))
+
+        self.assertIn("managed upload directory", str(error.exception))
 
 
 if __name__ == "__main__":

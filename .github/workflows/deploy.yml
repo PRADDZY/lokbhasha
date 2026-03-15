@@ -7,6 +7,8 @@ on:
     branches: [master, main]
   workflow_dispatch:
 
+permissions: {}
+
 jobs:
   deploy-backend:
     name: Deploy Backend
