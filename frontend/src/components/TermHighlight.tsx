@@ -1,4 +1,4 @@
-import type { GlossaryHit } from '@/lib/server/types'
+import type { GlossaryHit } from '@/lib/types'
 
 
 type TermHighlightProps = {

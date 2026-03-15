@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { analyzeMarathiDocument } from '../src/lib/server/analysis'
-import type { GlossaryHit, LingoClient } from '../src/lib/server/types'
+import { analyzeMarathiDocument } from '../src/analysis'
+import type { GlossaryHit, LingoClient } from '../src/types'
 
 
 test('analyzeMarathiDocument uses glossary hints for english translation and localizes canonical english', async () => {

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import test from 'node:test'
 
-import { getGlossaryDatabasePath } from '../src/lib/server/config'
+import { getGlossaryDatabasePath } from '../src/config'
 
 
 test('getGlossaryDatabasePath defaults to the repo tracked sqlite glossary', () => {

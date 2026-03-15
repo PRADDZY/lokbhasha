@@ -1,6 +1,14 @@
-import type { AnalysisResult } from './server/types'
+import type { AnalysisResult } from './types'
 
-export type { AnalysisResult }
+
+const DEFAULT_ANALYZE_API_BASE_URL = 'http://localhost:5001'
+
+function getAnalyzeApiUrl(): string {
+  const baseUrl = (process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_ANALYZE_API_BASE_URL).replace(/\/$/, '')
+  return `${baseUrl}/analyze`
+}
+
+export type { AnalysisResult } from './types'
 
 export async function analyzeDocument(input: {
   file?: File | null
@@ -14,7 +22,7 @@ export async function analyzeDocument(input: {
     formData.append('marathiText', input.marathiText.trim())
   }
 
-  const response = await fetch('/api/analyze', {
+  const response = await fetch(getAnalyzeApiUrl(), {
     method: 'POST',
     body: formData,
   })

@@ -4,13 +4,13 @@ import os from 'node:os'
 import path from 'node:path'
 import Database from 'better-sqlite3'
 
-import { detectGlossaryHits } from '../src/lib/server/glossary'
+import { detectGlossaryHits } from '../src/glossary'
 
 
-const TERM_APPLICATION = '\u0905\u0930\u094d\u091c'
-const TERM_MEDICAL_HISTORY = '\u0935\u0948\u0926\u094d\u092f\u0915\u0940\u092f \u092a\u0942\u0930\u094d\u0935\u0935\u0943\u0924\u094d\u0924'
-const TEXT_APPLICATION = '\u0938\u0926\u0930 \u0905\u0930\u094d\u091c \u0938\u093e\u0926\u0930 \u0915\u0930\u093e'
-const TEXT_MEDICAL_HISTORY = '\u0935\u0948\u0926\u094d\u092f\u0915\u0940\u092f \u092a\u0942\u0930\u094d\u0935\u0935\u0943\u0924\u094d\u0924 \u0938\u093e\u0926\u0930 \u0915\u0930\u093e'
+const TERM_APPLICATION = 'अर्ज'
+const TERM_MEDICAL_HISTORY = 'वैद्यकीय पूर्ववृत्त'
+const TEXT_APPLICATION = 'सदर अर्ज सादर करा'
+const TEXT_MEDICAL_HISTORY = 'वैद्यकीय पूर्ववृत्त सादर करा'
 
 function createTempGlossary() {
   const databasePath = path.join(os.tmpdir(), `lokbhasha-glossary-${Date.now()}-${Math.random()}.sqlite3`)
@@ -53,7 +53,7 @@ test('detectGlossaryHits prefers longer multiword glossary terms', () => {
   const insertTerm = database.prepare(`
     INSERT INTO glossary (marathi, english) VALUES (?, ?)
   `)
-  insertTerm.run('\u092a\u0942\u0930\u094d\u0935\u0935\u0943\u0924\u094d\u0924', 'history')
+  insertTerm.run('पूर्ववृत्त', 'history')
   insertTerm.run(TERM_MEDICAL_HISTORY, 'medical history')
   database.close()
 

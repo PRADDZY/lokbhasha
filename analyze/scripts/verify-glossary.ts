@@ -1,7 +1,7 @@
 import path from 'node:path'
 
-import { getGlossaryDatabasePath } from '../src/lib/server/config'
-import { openGlossaryDatabase } from '../src/lib/server/glossary'
+import { getGlossaryDatabasePath } from '../src/config'
+import { openGlossaryDatabase } from '../src/glossary'
 
 
 function main() {
@@ -14,9 +14,7 @@ function main() {
       .prepare('SELECT COUNT(*) AS count FROM glossary')
       .get() as { count?: number } | undefined
 
-    console.log(
-      `Glossary database ready at ${resolvedPath} (${termCountRow?.count ?? 0} terms).`
-    )
+    console.log(`Glossary database ready at ${resolvedPath} (${termCountRow?.count ?? 0} terms).`)
   } finally {
     database.close()
   }

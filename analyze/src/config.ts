@@ -1,0 +1,66 @@
+import path from 'node:path'
+
+
+const DEFAULT_TARGET_LOCALES = ['hi', 'gu']
+const DEFAULT_ALLOWED_ORIGINS = ['http://localhost:3000']
+const DEFAULT_ANALYZE_PORT = 5001
+
+function normalizeBaseUrl(url: string): string {
+  const trimmed = url.trim()
+  if (!trimmed) {
+    return ''
+  }
+
+  const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `http://${trimmed}`
+  return withProtocol.replace(/\/$/, '')
+}
+
+export function getAnalyzePort(): number {
+  const configured = process.env.PORT || process.env.ANALYZE_PORT || String(DEFAULT_ANALYZE_PORT)
+  const parsed = Number.parseInt(configured, 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_ANALYZE_PORT
+}
+
+export function getAllowedOrigins(): string[] {
+  const configured = process.env.CORS_ALLOWED_ORIGINS?.trim()
+  if (!configured) {
+    return DEFAULT_ALLOWED_ORIGINS
+  }
+
+  const origins = configured
+    .split(',')
+    .map((origin) => normalizeBaseUrl(origin))
+    .filter(Boolean)
+
+  return origins.length ? origins : DEFAULT_ALLOWED_ORIGINS
+}
+
+export function getExtractionBackendUrl(): string {
+  return normalizeBaseUrl(
+    process.env.EXTRACT_BACKEND_URL ||
+    process.env.BACKEND_URL ||
+    'http://localhost:5000'
+  )
+}
+
+export function getGlossaryDatabasePath(): string {
+  return process.env.GLOSSARY_DB_PATH || path.resolve(process.cwd(), '..', 'sqlite', 'glossary.sqlite3')
+}
+
+export function getTargetLocales(): string[] {
+  const configuredLocales = process.env.LINGODOTDEV_TARGET_LOCALES || process.env.LINGO_DEV_TARGET_LOCALES
+  if (!configuredLocales) {
+    return DEFAULT_TARGET_LOCALES
+  }
+
+  const locales = configuredLocales
+    .split(',')
+    .map((locale) => locale.trim())
+    .filter(Boolean)
+
+  return locales.length ? locales : DEFAULT_TARGET_LOCALES
+}
+
+export function getLingoApiKey(): string {
+  return (process.env.LINGODOTDEV_API_KEY || process.env.LINGO_DEV_API_KEY || '').trim()
+}

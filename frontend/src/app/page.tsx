@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation'
 import { startTransition, useState } from 'react'
 
-import { AnalysisResult, analyzeDocument } from '@/lib/api'
+import { analyzeDocument } from '@/lib/api'
+import type { AnalysisResult } from '@/lib/api'
 import { UploadForm } from '@/components/UploadForm'
 
 
