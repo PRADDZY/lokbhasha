@@ -4,13 +4,11 @@ import argparse
 import json
 import logging
 from pathlib import Path
-import re
 import sqlite3
 import sys
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
-WHITESPACE_PATTERN = re.compile(r"\s+")
 LOGGER = logging.getLogger(__name__)
 
 
@@ -19,7 +17,7 @@ DEFAULT_OUTPUT_PATH = ROOT_DIR / "sqlite" / "glossary.sqlite3"
 
 
 def normalize_term(term: str) -> str:
-    cleaned = WHITESPACE_PATTERN.sub(" ", term.strip())
+    cleaned = " ".join(term.strip().split())
     return cleaned.replace("\u200c", "").replace("\u200d", "")
 
 

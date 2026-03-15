@@ -2,14 +2,7 @@
 
 from __future__ import annotations
 
-import re
 import unicodedata
-
-
-DEVANAGARI_PATTERN = re.compile(r"[\u0900-\u097F]")
-LETTER_PATTERN = re.compile(r"[A-Za-z\u0900-\u097F]")
-WHITESPACE_PATTERN = re.compile(r"[ \t]+")
-BLANK_LINE_PATTERN = re.compile(r"\n{3,}")
 
 
 def normalize_unicode_text(text: str) -> str:
@@ -18,20 +11,24 @@ def normalize_unicode_text(text: str) -> str:
 
 def clean_extracted_text(text: str) -> str:
     normalized = normalize_unicode_text(text).replace("\r\n", "\n").replace("\r", "\n")
-    collapsed_lines = [WHITESPACE_PATTERN.sub(" ", line).strip() for line in normalized.split("\n")]
+    collapsed_lines = [" ".join(line.split()).strip() for line in normalized.split("\n")]
     cleaned = "\n".join(line for line in collapsed_lines if line)
-    return BLANK_LINE_PATTERN.sub("\n\n", cleaned).strip()
+    return cleaned.strip()
+
+
+def _is_devanagari_letter(character: str) -> bool:
+    return character.isalpha() and "\u0900" <= character <= "\u097F"
 
 
 def marathi_character_ratio(text: str) -> float:
     if not text:
         return 0.0
 
-    letter_count = len(LETTER_PATTERN.findall(text))
+    letter_count = sum(1 for character in text if character.isalpha())
     if letter_count == 0:
         return 0.0
 
-    devanagari_count = len(DEVANAGARI_PATTERN.findall(text))
+    devanagari_count = sum(1 for character in text if _is_devanagari_letter(character))
     return devanagari_count / letter_count
 
 
