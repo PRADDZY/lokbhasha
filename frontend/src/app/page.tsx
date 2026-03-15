@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { startTransition, useState } from 'react'
 
 import { analyzeDocument } from '@/lib/api'
-import type { AnalysisResult } from '@/lib/api'
+import type { AnalysisCoreResult } from '@/lib/api'
 import { UploadForm } from '@/components/UploadForm'
 
 
@@ -27,7 +27,7 @@ export default function Home() {
     setIsLoading(true)
 
     try {
-      const result: AnalysisResult = await analyzeDocument({
+      const result: AnalysisCoreResult = await analyzeDocument({
         file: selectedFile,
         marathiText,
       })
@@ -56,7 +56,7 @@ export default function Home() {
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-[var(--muted)] md:text-xl">
                 LokBhasha extracts text from circular PDFs, preserves important government terms,
-                and turns official language into readable English with actions people can follow.
+                and turns official language into readable English before any optional follow-up outputs are requested.
               </p>
             </div>
           </div>
@@ -68,7 +68,7 @@ export default function Home() {
             </div>
             <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5">
               <p className="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">Output</p>
-              <p className="mt-3 text-lg font-semibold">Translation, simplification, and key actions</p>
+              <p className="mt-3 text-lg font-semibold">Original text beside canonical English</p>
             </div>
             <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5">
               <p className="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">Focus</p>

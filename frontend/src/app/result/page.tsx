@@ -4,13 +4,13 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 import { ResultsDisplay } from '@/components/ResultsDisplay'
-import type { AnalysisResult } from '@/lib/api'
+import type { AnalysisSessionResult } from '@/lib/api'
 
 
 const RESULT_STORAGE_KEY = 'lokbhasha:last-result'
 
 export default function ResultPage() {
-  const [result, setResult] = useState<AnalysisResult | null>(null)
+  const [result, setResult] = useState<AnalysisSessionResult | null>(null)
 
   useEffect(() => {
     const storedValue = window.sessionStorage.getItem(RESULT_STORAGE_KEY)
@@ -18,7 +18,7 @@ export default function ResultPage() {
       return
     }
 
-    setResult(JSON.parse(storedValue) as AnalysisResult)
+    setResult(JSON.parse(storedValue) as AnalysisSessionResult)
   }, [])
 
   if (!result) {
