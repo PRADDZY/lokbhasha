@@ -68,9 +68,11 @@ uploads/
 dict/*.json
 dict/*.jsonl
 dict/*.txt
+dict/*.sqlite3
 
 # Project planning (local only)
 lokbhasha_plan.md
+.worktrees/
 
 # Testing
 .coverage
