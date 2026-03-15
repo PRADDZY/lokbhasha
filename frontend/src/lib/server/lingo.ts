@@ -6,6 +6,13 @@ import type { LingoClient } from './types'
 
 let cachedClient: LingoClient | null = null
 
+export class LingoConfigurationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'LingoConfigurationError'
+  }
+}
+
 export function createLingoClient(): LingoClient {
   if (cachedClient) {
     return cachedClient
@@ -13,7 +20,7 @@ export function createLingoClient(): LingoClient {
 
   const apiKey = getLingoApiKey()
   if (!apiKey) {
-    throw new Error('LINGODOTDEV_API_KEY is required for translation and localization.')
+    throw new LingoConfigurationError('LINGODOTDEV_API_KEY is required for translation and localization.')
   }
 
   const engine = new LingoDotDevEngine({ apiKey })

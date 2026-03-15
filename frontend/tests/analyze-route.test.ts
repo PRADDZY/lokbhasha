@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { handleAnalyzeFormData } from '../src/lib/server/analyze-route'
+import { GlossaryDatabaseError } from '../src/lib/server/glossary'
+import * as analyzeRoute from '../src/lib/server/analyze-route'
 import type { AnalysisResult } from '../src/lib/server/types'
 
 
@@ -25,7 +26,7 @@ test('handleAnalyzeFormData analyzes pasted Marathi text', async () => {
   formData.set('marathiText', 'अर्ज सादर करा')
 
   const expected = buildExpectedResult()
-  const result = await handleAnalyzeFormData(formData, {
+  const result = await analyzeRoute.handleAnalyzeFormData(formData, {
     analyzeMarathiDocument: async (input) => {
       assert.equal(input.source, 'text')
       assert.equal(input.marathiText, 'अर्ज सादर करा')
@@ -50,7 +51,7 @@ test('handleAnalyzeFormData extracts pdf content before analysis', async () => {
     marathiText: 'सदर अर्ज',
   }
 
-  const result = await handleAnalyzeFormData(formData, {
+  const result = await analyzeRoute.handleAnalyzeFormData(formData, {
     analyzeMarathiDocument: async (input) => {
       assert.equal(input.source, 'pdf')
       assert.equal(input.extractionConfidence, 0.88)
@@ -71,7 +72,7 @@ test('handleAnalyzeFormData rejects empty requests', async () => {
 
   await assert.rejects(
     () =>
-      handleAnalyzeFormData(formData, {
+      analyzeRoute.handleAnalyzeFormData(formData, {
         analyzeMarathiDocument: async () => buildExpectedResult(),
         extractPdfText: async () => ({
           text: 'unused',
@@ -80,4 +81,36 @@ test('handleAnalyzeFormData rejects empty requests', async () => {
       }),
     /Upload a PDF or provide Marathi text before analyzing\./
   )
+})
+
+test('getAnalyzeErrorStatus maps request validation failures to bad request', () => {
+  assert.equal(
+    analyzeRoute.getAnalyzeErrorStatus?.(new Error('Upload a PDF or provide Marathi text before analyzing.')),
+    400
+  )
+})
+
+test('getAnalyzeErrorStatus maps glossary and lingo dependency failures to service unavailable', () => {
+  assert.equal(
+    analyzeRoute.getAnalyzeErrorStatus?.(new GlossaryDatabaseError('missing glossary')),
+    503
+  )
+  assert.equal(
+    analyzeRoute.getAnalyzeErrorStatus?.(
+      new Error('LINGODOTDEV_API_KEY is required for translation and localization.')
+    ),
+    503
+  )
+})
+
+test('getAnalyzeErrorStatus maps extraction dependency failures to service unavailable', () => {
+  assert.equal(analyzeRoute.getAnalyzeErrorStatus?.(new Error('PDF extraction failed.')), 503)
+  assert.equal(
+    analyzeRoute.getAnalyzeErrorStatus?.(new Error('Extraction service returned an invalid response.')),
+    503
+  )
+})
+
+test('getAnalyzeErrorStatus keeps unexpected failures as internal errors', () => {
+  assert.equal(analyzeRoute.getAnalyzeErrorStatus?.(new Error('Unexpected failure.')), 500)
 })

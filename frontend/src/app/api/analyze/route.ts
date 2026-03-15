@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 
 import { analyzeMarathiDocument } from '@/lib/server/analysis'
-import { handleAnalyzeFormData } from '@/lib/server/analyze-route'
+import { getAnalyzeErrorStatus, handleAnalyzeFormData } from '@/lib/server/analyze-route'
 import { getGlossaryDatabasePath, getTargetLocales } from '@/lib/server/config'
 import { extractPdfText } from '@/lib/server/extraction'
 import { detectGlossaryHits } from '@/lib/server/glossary'
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     return NextResponse.json(result)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Analysis failed.'
-    const status = message === 'Upload a PDF or provide Marathi text before analyzing.' ? 400 : 500
+    const status = getAnalyzeErrorStatus(error)
     return NextResponse.json({ detail: message }, { status })
   }
 }

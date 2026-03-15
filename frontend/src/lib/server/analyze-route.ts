@@ -1,5 +1,9 @@
+import { GlossaryDatabaseError } from './glossary'
+import { LingoConfigurationError } from './lingo'
 import type { AnalysisResult } from './types'
 
+
+export const ANALYZE_REQUEST_ERROR_MESSAGE = 'Upload a PDF or provide Marathi text before analyzing.'
 
 type AnalyzeRouteDependencies = {
   analyzeMarathiDocument: (input: {
@@ -8,6 +12,33 @@ type AnalyzeRouteDependencies = {
     extractionConfidence?: number
   }) => Promise<AnalysisResult>
   extractPdfText: (file: File) => Promise<{ text: string; confidence: number }>
+}
+
+export function getAnalyzeErrorStatus(error: unknown): number {
+  if (error instanceof Error && error.message === ANALYZE_REQUEST_ERROR_MESSAGE) {
+    return 400
+  }
+
+  if (error instanceof GlossaryDatabaseError || error instanceof LingoConfigurationError) {
+    return 503
+  }
+
+  if (error instanceof Error && error.message.includes('LINGODOTDEV_API_KEY is required')) {
+    return 503
+  }
+
+  if (
+    error instanceof Error &&
+    (
+      error.message === 'PDF extraction failed.' ||
+      error.message === 'Extraction service returned an invalid response.' ||
+      error.message.includes('PDF extraction dependencies are missing')
+    )
+  ) {
+    return 503
+  }
+
+  return 500
 }
 
 export async function handleAnalyzeFormData(
@@ -29,7 +60,7 @@ export async function handleAnalyzeFormData(
   }
 
   if (!sourceText) {
-    throw new Error('Upload a PDF or provide Marathi text before analyzing.')
+    throw new Error(ANALYZE_REQUEST_ERROR_MESSAGE)
   }
 
   return dependencies.analyzeMarathiDocument({
