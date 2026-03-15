@@ -70,6 +70,23 @@ test('buildAnalyzeServer exposes a health endpoint', async () => {
   await server.close()
 })
 
+test('buildAnalyzeServer explains how to use the analyze endpoint on GET requests', async () => {
+  const server = buildAnalyzeServer({
+    handleAnalyzeRequest: async () => buildExpectedResult(),
+  })
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/analyze',
+  })
+
+  assert.equal(response.statusCode, 405)
+  assert.deepEqual(response.json(), {
+    detail: 'Use POST /analyze with multipart form data or Marathi text.',
+  })
+  await server.close()
+})
+
 test('buildAnalyzeServer converts multipart text requests into FormData for analysis', async () => {
   let receivedText = ''
   const server = buildAnalyzeServer({

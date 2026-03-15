@@ -87,6 +87,12 @@ export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {})
 
   server.get('/health', async () => ({ status: 'ok' }))
 
+  server.get('/analyze', async (_, reply) => {
+    return reply.code(405).send({
+      detail: 'Use POST /analyze with multipart form data or Marathi text.',
+    })
+  })
+
   server.post('/analyze', async (request, reply) => {
     try {
       const formData = await requestToFormData(request)

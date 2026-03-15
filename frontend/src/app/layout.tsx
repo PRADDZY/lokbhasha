@@ -1,3 +1,4 @@
+import './globals.css'
 import { Cormorant_Garamond, IBM_Plex_Sans } from 'next/font/google'
 
 const displayFont = Cormorant_Garamond({
