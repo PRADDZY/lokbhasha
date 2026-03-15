@@ -1,0 +1,133 @@
+import assert from 'node:assert/strict'
+import test from 'node:test'
+
+import type { AnalysisResult } from '../src/types'
+import { buildAnalyzeServer } from '../src/server'
+
+
+function buildExpectedResult(): AnalysisResult {
+  return {
+    source: 'text',
+    marathiText: 'submitted text',
+    glossaryHits: [],
+    terminologyHints: {},
+    englishCanonical: 'Submit the application',
+    localizedText: {
+      hi: 'आवेदन जमा करें',
+    },
+    simplifiedEnglish: 'Submit the application',
+    actions: [],
+  }
+}
+
+function buildMultipartBody(parts: Array<
+  | { name: string; value: string }
+  | { name: string; filename: string; contentType: string; content: Buffer | string }
+>) {
+  const boundary = 'lokbhasha-test-boundary'
+  const chunks: Buffer[] = []
+
+  for (const part of parts) {
+    chunks.push(Buffer.from(`--${boundary}\r\n`))
+    if ('filename' in part) {
+      chunks.push(
+        Buffer.from(
+          `Content-Disposition: form-data; name="${part.name}"; filename="${part.filename}"\r\n` +
+          `Content-Type: ${part.contentType}\r\n\r\n`
+        )
+      )
+      chunks.push(Buffer.isBuffer(part.content) ? part.content : Buffer.from(part.content))
+      chunks.push(Buffer.from('\r\n'))
+      continue
+    }
+
+    chunks.push(
+      Buffer.from(
+        `Content-Disposition: form-data; name="${part.name}"\r\n\r\n${part.value}\r\n`
+      )
+    )
+  }
+
+  chunks.push(Buffer.from(`--${boundary}--\r\n`))
+  return {
+    body: Buffer.concat(chunks),
+    contentType: `multipart/form-data; boundary=${boundary}`,
+  }
+}
+
+test('buildAnalyzeServer exposes a health endpoint', async () => {
+  const server = buildAnalyzeServer({
+    handleAnalyzeRequest: async () => buildExpectedResult(),
+  })
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/health',
+  })
+
+  assert.equal(response.statusCode, 200)
+  assert.deepEqual(response.json(), { status: 'ok' })
+  await server.close()
+})
+
+test('buildAnalyzeServer converts multipart text requests into FormData for analysis', async () => {
+  let receivedText = ''
+  const server = buildAnalyzeServer({
+    handleAnalyzeRequest: async (formData) => {
+      receivedText = String(formData.get('marathiText') ?? '')
+      return buildExpectedResult()
+    },
+  })
+  const multipart = buildMultipartBody([
+    { name: 'marathiText', value: 'मजकूर' },
+  ])
+
+  const response = await server.inject({
+    method: 'POST',
+    url: '/analyze',
+    payload: multipart.body,
+    headers: {
+      'content-type': multipart.contentType,
+    },
+  })
+
+  assert.equal(response.statusCode, 200)
+  assert.equal(receivedText, 'मजकूर')
+  await server.close()
+})
+
+test('buildAnalyzeServer converts multipart file uploads into File objects for analysis', async () => {
+  let receivedFileName = ''
+  const server = buildAnalyzeServer({
+    handleAnalyzeRequest: async (formData) => {
+      const file = formData.get('file')
+      assert.ok(file instanceof File)
+      receivedFileName = file.name
+      return {
+        ...buildExpectedResult(),
+        source: 'pdf',
+      }
+    },
+  })
+  const multipart = buildMultipartBody([
+    {
+      name: 'file',
+      filename: 'circular.pdf',
+      contentType: 'application/pdf',
+      content: Buffer.from('%PDF-sample'),
+    },
+  ])
+
+  const response = await server.inject({
+    method: 'POST',
+    url: '/analyze',
+    payload: multipart.body,
+    headers: {
+      'content-type': multipart.contentType,
+    },
+  })
+
+  assert.equal(response.statusCode, 200)
+  assert.equal(receivedFileName, 'circular.pdf')
+  await server.close()
+})

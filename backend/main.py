@@ -5,16 +5,19 @@ Marathi PDF Extraction Service
 
 from contextlib import suppress
 import os
-from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
 from pathlib import Path
 from uuid import uuid4
+
 from dotenv import load_dotenv
+from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 
 
 load_dotenv()
 
 
+DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+PDF_SIGNATURE = b"%PDF-"
 UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
 
@@ -31,11 +34,42 @@ def _allowed_origins() -> list[str]:
         "https://vercel.app",
     ]
 
+
+def _get_max_upload_bytes() -> int:
+    configured = os.getenv("BACKEND_MAX_UPLOAD_BYTES", "").strip()
+    try:
+        parsed = int(configured)
+    except ValueError:
+        parsed = 0
+
+    return parsed if parsed > 0 else DEFAULT_MAX_UPLOAD_BYTES
+
+
+def _validate_pdf_upload(file: UploadFile, file_content: bytes) -> None:
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Uploaded file must have a filename.")
+
+    if Path(file.filename).suffix.lower() != ".pdf":
+        raise HTTPException(status_code=400, detail="Only PDF uploads are supported.")
+
+    if not file_content:
+        raise HTTPException(status_code=400, detail="Uploaded PDF file is empty.")
+
+    if len(file_content) > _get_max_upload_bytes():
+        raise HTTPException(
+            status_code=413,
+            detail="Uploaded PDF exceeds the maximum allowed size.",
+        )
+
+    if not file_content.startswith(PDF_SIGNATURE):
+        raise HTTPException(status_code=400, detail="Uploaded file is not a valid PDF.")
+
+
 # Initialize FastAPI app
 app = FastAPI(
     title="LokBhasha API",
     description="Government Marathi PDF extraction service",
-    version="0.1.0"
+    version="0.1.0",
 )
 
 app.add_middleware(
@@ -45,6 +79,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 def _extract_pdf_text_safe(pdf_path: str):
     try:
@@ -60,15 +95,8 @@ def _extract_pdf_text_safe(pdf_path: str):
 async def _extract_uploaded_pdf(file: UploadFile) -> tuple[str, float]:
     temp_path: Path | None = None
     try:
-        if not file.filename:
-            raise HTTPException(status_code=400, detail="Uploaded file must have a filename.")
-
-        if Path(file.filename).suffix.lower() != ".pdf":
-            raise HTTPException(status_code=400, detail="Only PDF uploads are supported.")
-
         file_content = await file.read()
-        if not file_content:
-            raise HTTPException(status_code=400, detail="Uploaded PDF file is empty.")
+        _validate_pdf_upload(file, file_content)
 
         temp_path = UPLOADS_DIR / f"{uuid4().hex}.pdf"
         temp_path.write_bytes(file_content)
@@ -86,16 +114,20 @@ async def _extract_uploaded_pdf(file: UploadFile) -> tuple[str, float]:
             with suppress(FileNotFoundError):
                 temp_path.unlink()
 
+
 # Health check
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
 
 @app.post("/extract")
 async def extract(file: UploadFile = File(...)):
     text, confidence = await _extract_uploaded_pdf(file)
     return {"text": text, "confidence": confidence}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("BACKEND_PORT", "5000")))

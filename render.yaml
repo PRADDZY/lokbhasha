@@ -1,6 +1,28 @@
 services:
   - type: web
-    name: lokbhasha-backend
+    name: lokbhasha-analyze
+    runtime: docker
+    dockerfilePath: ./analyze/Dockerfile
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://lokbhasha.vercel.app
+      - key: EXTRACT_BACKEND_URL
+        fromService:
+          type: pserv
+          name: lokbhasha-extract
+          property: hostport
+      - key: GLOSSARY_DB_PATH
+        value: /app/sqlite/glossary.sqlite3
+      - key: LINGODOTDEV_TARGET_LOCALES
+        value: hi,gu
+      - key: LINGODOTDEV_API_KEY
+        sync: false
+
+  - type: pserv
+    name: lokbhasha-extract
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     plan: free
@@ -9,7 +31,7 @@ services:
     envVars:
       - key: BACKEND_PORT
         value: 5000
-      - key: BACKEND_CORS_ORIGINS
-        value: https://lokbhasha.vercel.app
       - key: TESSERACT_LANG
         value: mar+eng
+      - key: BACKEND_MAX_UPLOAD_BYTES
+        value: 10485760
