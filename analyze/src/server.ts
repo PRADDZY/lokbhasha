@@ -126,8 +126,12 @@ export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {})
       const result = await handleAnalyzeRequest(formData)
       return reply.send(result)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Analysis failed.'
       const status = getAnalyzeErrorStatus(error)
+      const message = status === 500
+        ? 'Analysis failed.'
+        : error instanceof Error
+          ? error.message
+          : 'Analysis failed.'
       return reply.code(status).send({ detail: message })
     }
   })
@@ -144,13 +148,21 @@ export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {})
       )
       return reply.send(result)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Analysis failed.'
       const status = getAnalyzeErrorStatus(error)
+      const message = status === 500
+        ? 'Analysis failed.'
+        : error instanceof Error
+          ? error.message
+          : 'Analysis failed.'
       return reply.code(status).send({ detail: message })
     }
   })
 
   return server
+}
+
+export function getStartupFailureMessage(_error: unknown): string {
+  return 'Analyze service failed to start.'
 }
 
 export async function startAnalyzeServer() {
@@ -167,8 +179,7 @@ const entryPointPath = process.argv[1] ? path.resolve(process.argv[1]) : ''
 
 if (entryPointPath === currentFilePath) {
   startAnalyzeServer().catch((error) => {
-    const message = error instanceof Error ? error.stack ?? error.message : String(error)
-    process.stderr.write(`${message}\n`)
+    process.stderr.write(`${getStartupFailureMessage(error)}\n`)
     process.exit(1)
   })
 }

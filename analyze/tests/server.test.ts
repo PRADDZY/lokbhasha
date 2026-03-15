@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import type { AnalysisCoreResult, AnalysisEnrichmentResult } from '../src/types'
-import { buildAnalyzeServer } from '../src/server'
+import { buildAnalyzeServer, getStartupFailureMessage } from '../src/server'
 
 
 function buildExpectedCoreResult(): AnalysisCoreResult {
@@ -204,4 +204,35 @@ test('buildAnalyzeServer forwards enrich requests as JSON payloads', async () =>
     includeActions: true,
   })
   await server.close()
+})
+
+test('buildAnalyzeServer hides unexpected internal errors behind a generic 500 response', async () => {
+  const server = buildAnalyzeServer({
+    handleAnalyzeRequest: async () => {
+      throw new Error('secret internal path')
+    },
+    handleEnrichRequest: async () => buildExpectedEnrichmentResult(),
+  })
+
+  const response = await server.inject({
+    method: 'POST',
+    url: '/analyze',
+    payload: {
+      marathiText: 'मजकूर',
+    },
+  })
+
+  assert.equal(response.statusCode, 500)
+  assert.deepEqual(response.json(), {
+    detail: 'Analysis failed.',
+  })
+  await server.close()
+})
+
+test('getStartupFailureMessage never returns stack traces or internal error text', () => {
+  assert.equal(getStartupFailureMessage(new Error('boot exploded')), 'Analyze service failed to start.')
+  assert.equal(
+    getStartupFailureMessage({ stack: 'stack', message: 'details' }),
+    'Analyze service failed to start.'
+  )
 })
