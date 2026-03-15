@@ -90,3 +90,35 @@ test('detectGlossaryHits prefers longer multiword glossary terms', () => {
   assert.equal(hits[0]?.canonicalTerm, 'वैद्यकीय पूर्ववृत्त')
   assert.equal(hits[0]?.meaning, 'medical history')
 })
+
+test('detectGlossaryHits throws a clear error when the glossary database is missing', () => {
+  const missingDatabasePath = path.join(
+    os.tmpdir(),
+    `lokbhasha-missing-glossary-${Date.now()}-${Math.random()}.sqlite3`
+  )
+
+  assert.throws(
+    () => detectGlossaryHits('अर्ज सादर करा', { databasePath: missingDatabasePath }),
+    /Glossary database not found/
+  )
+})
+
+test('detectGlossaryHits throws a clear error when the glossary schema is invalid', () => {
+  const invalidDatabasePath = path.join(
+    os.tmpdir(),
+    `lokbhasha-invalid-glossary-${Date.now()}-${Math.random()}.sqlite3`
+  )
+  const database = new Database(invalidDatabasePath)
+  database.exec(`
+    CREATE TABLE unrelated_table (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      value TEXT NOT NULL
+    );
+  `)
+  database.close()
+
+  assert.throws(
+    () => detectGlossaryHits('अर्ज सादर करा', { databasePath: invalidDatabasePath }),
+    /missing required glossary schema/
+  )
+})

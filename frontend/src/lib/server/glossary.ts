@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3'
+import fs from 'node:fs'
 import path from 'node:path'
 
 import type { GlossaryHit } from './types'
@@ -8,6 +9,7 @@ const DEVANAGARI_PATTERN = /[\u0900-\u097F]+/gu
 const WHITESPACE_PATTERN = /\s+/g
 const DEFAULT_RUNTIME_TOKEN_LIMIT = 5
 const DATABASES_BY_PATH = new Map<string, Database.Database>()
+const REQUIRED_GLOSSARY_TABLES = ['glossary_terms', 'glossary_metadata'] as const
 
 type TokenSpan = {
   text: string
@@ -30,6 +32,13 @@ type GlossaryRow = {
   english_term: string
 }
 
+export class GlossaryDatabaseError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'GlossaryDatabaseError'
+  }
+}
+
 export function normalizeMarathiTerm(term: string): string {
   return term
     .trim()
@@ -50,14 +59,64 @@ function tokenizeMarathiText(text: string): TokenSpan[] {
   }))
 }
 
-function getGlossaryDatabase(databasePath: string) {
+function assertGlossarySchema(database: Database.Database, databasePath: string) {
+  const rows = database
+    .prepare(
+      `
+        SELECT name
+        FROM sqlite_master
+        WHERE type = 'table'
+          AND name IN (${REQUIRED_GLOSSARY_TABLES.map(() => '?').join(', ')})
+      `
+    )
+    .all(...REQUIRED_GLOSSARY_TABLES) as Array<{ name: string }>
+  const tableNames = new Set(rows.map((row) => row.name))
+  const missingTables = REQUIRED_GLOSSARY_TABLES.filter((tableName) => !tableNames.has(tableName))
+  if (missingTables.length) {
+    throw new GlossaryDatabaseError(
+      `Glossary database at ${databasePath} is missing required glossary schema: ${missingTables.join(', ')}.`
+    )
+  }
+
+  const metadataRow = database
+    .prepare("SELECT value FROM glossary_metadata WHERE key = 'realtime_token_limit'")
+    .get() as { value?: string } | undefined
+  if (!metadataRow?.value) {
+    throw new GlossaryDatabaseError(
+      `Glossary database at ${databasePath} is missing required glossary metadata: realtime_token_limit.`
+    )
+  }
+}
+
+export function openGlossaryDatabase(databasePath: string) {
   const resolvedPath = path.resolve(databasePath)
   const existingDatabase = DATABASES_BY_PATH.get(resolvedPath)
   if (existingDatabase) {
     return existingDatabase
   }
 
-  const database = new Database(resolvedPath, { readonly: true })
+  if (!fs.existsSync(resolvedPath)) {
+    throw new GlossaryDatabaseError(
+      `Glossary database not found at ${resolvedPath}. Set GLOSSARY_DB_PATH to a valid SQLite glossary artifact.`
+    )
+  }
+
+  let database: Database.Database
+  try {
+    database = new Database(resolvedPath, { readonly: true })
+  } catch {
+    throw new GlossaryDatabaseError(
+      `Glossary database at ${resolvedPath} could not be opened. Ensure GLOSSARY_DB_PATH points to a readable SQLite file.`
+    )
+  }
+
+  try {
+    assertGlossarySchema(database, resolvedPath)
+  } catch (error) {
+    database.close()
+    throw error
+  }
+
   DATABASES_BY_PATH.set(resolvedPath, database)
   return database
 }
@@ -105,7 +164,7 @@ export function detectGlossaryHits(
   }
 
   const databasePath = options?.databasePath ?? path.resolve(process.cwd(), '..', 'dict', 'glossary.sqlite3')
-  const database = getGlossaryDatabase(databasePath)
+  const database = openGlossaryDatabase(databasePath)
   const tokens = tokenizeMarathiText(text)
   if (!tokens.length) {
     return []
