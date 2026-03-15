@@ -2,6 +2,7 @@ import cors from '@fastify/cors'
 import multipart from '@fastify/multipart'
 import Fastify, { type FastifyInstance, type FastifyRequest } from 'fastify'
 import path from 'node:path'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
 import { analyzeMarathiDocument, generateAnalysisEnrichment } from './analysis'
@@ -166,7 +167,8 @@ const entryPointPath = process.argv[1] ? path.resolve(process.argv[1]) : ''
 
 if (entryPointPath === currentFilePath) {
   startAnalyzeServer().catch((error) => {
-    console.error(error)
+    const message = error instanceof Error ? error.stack ?? error.message : String(error)
+    process.stderr.write(`${message}\n`)
     process.exit(1)
   })
 }

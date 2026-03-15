@@ -2,13 +2,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 from pathlib import Path
 import re
 import sqlite3
+import sys
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 WHITESPACE_PATTERN = re.compile(r"\s+")
+LOGGER = logging.getLogger(__name__)
 
 
 DEFAULT_SOURCE_PATH = ROOT_DIR / "sqlite" / "lingo_dev_mr_en.json"
@@ -29,19 +32,16 @@ def extract_primary_meaning(english_text: str) -> str:
 
 
 def _initialize_schema(connection: sqlite3.Connection) -> None:
-    connection.executescript(
+    connection.execute("DROP TABLE IF EXISTS glossary")
+    connection.execute(
         """
-        DROP TABLE IF EXISTS glossary;
-
         CREATE TABLE glossary (
             marathi TEXT PRIMARY KEY,
             english TEXT NOT NULL
-        );
-
-        CREATE INDEX idx_marathi
-            ON glossary(marathi);
+        )
         """
     )
+    connection.execute("CREATE INDEX idx_marathi ON glossary(marathi)")
 
 
 def build_glossary_sqlite(
@@ -62,8 +62,13 @@ def build_glossary_sqlite(
 
         inserted = 0
         for marathi_term, payload in raw_dictionary.items():
-            normalized_term = normalize_term(payload.get("mr") or marathi_term)
-            english_term = extract_primary_meaning(payload.get("en", ""))
+            if not isinstance(payload, dict):
+                continue
+
+            marathi_value = payload.get("mr")
+            english_value = payload.get("en", "")
+            normalized_term = normalize_term(marathi_value if isinstance(marathi_value, str) else marathi_term)
+            english_term = extract_primary_meaning(english_value if isinstance(english_value, str) else "")
             if not normalized_term or not english_term:
                 continue
 
@@ -91,6 +96,7 @@ def build_glossary_sqlite(
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     parser = argparse.ArgumentParser(description="Build the LokBhasha SQLite glossary.")
     parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE_PATH)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT_PATH)
@@ -102,7 +108,9 @@ def main() -> None:
         output_path=args.output,
         realtime_token_limit=args.realtime_token_limit,
     )
-    print(json.dumps(stats, ensure_ascii=False))
+    LOGGER.info("Built glossary SQLite at %s with %s terms.", stats["output_path"], stats["total_terms"])
+    json.dump(stats, sys.stdout, ensure_ascii=False)
+    sys.stdout.write("\n")
 
 
 if __name__ == "__main__":
