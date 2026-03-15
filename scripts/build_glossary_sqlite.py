@@ -11,8 +11,8 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 WHITESPACE_PATTERN = re.compile(r"\s+")
 
 
-DEFAULT_SOURCE_PATH = ROOT_DIR / "dict" / "lingo_dev_mr_en.json"
-DEFAULT_OUTPUT_PATH = ROOT_DIR / "dict" / "glossary.sqlite3"
+DEFAULT_SOURCE_PATH = ROOT_DIR / "sqlite" / "lingo_dev_mr_en.json"
+DEFAULT_OUTPUT_PATH = ROOT_DIR / "sqlite" / "glossary.sqlite3"
 
 
 def normalize_term(term: str) -> str:
@@ -31,30 +31,15 @@ def extract_primary_meaning(english_text: str) -> str:
 def _initialize_schema(connection: sqlite3.Connection) -> None:
     connection.executescript(
         """
-        DROP TABLE IF EXISTS glossary_terms;
-        DROP TABLE IF EXISTS glossary_metadata;
+        DROP TABLE IF EXISTS glossary;
 
-        CREATE TABLE glossary_terms (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            marathi_term TEXT NOT NULL,
-            normalized_term TEXT NOT NULL UNIQUE,
-            english_term TEXT NOT NULL,
-            token_count INTEGER NOT NULL,
-            first_token TEXT NOT NULL,
-            prefix_key TEXT NOT NULL,
-            is_realtime INTEGER NOT NULL DEFAULT 1
+        CREATE TABLE glossary (
+            marathi TEXT PRIMARY KEY,
+            english TEXT NOT NULL
         );
 
-        CREATE TABLE glossary_metadata (
-            key TEXT PRIMARY KEY,
-            value TEXT NOT NULL
-        );
-
-        CREATE INDEX idx_glossary_terms_normalized_term
-            ON glossary_terms(normalized_term);
-
-        CREATE INDEX idx_glossary_terms_runtime_lookup
-            ON glossary_terms(is_realtime, token_count, first_token, prefix_key);
+        CREATE INDEX idx_marathi
+            ON glossary(marathi);
         """
     )
 
@@ -82,43 +67,18 @@ def build_glossary_sqlite(
             if not normalized_term or not english_term:
                 continue
 
-            tokens = normalized_term.split()
-            token_count = len(tokens)
-            first_token = tokens[0]
-            prefix_key = normalized_term[:4]
-            is_realtime = 1 if token_count <= realtime_token_limit else 0
-
             connection.execute(
                 """
-                INSERT OR REPLACE INTO glossary_terms (
-                    marathi_term,
-                    normalized_term,
-                    english_term,
-                    token_count,
-                    first_token,
-                    prefix_key,
-                    is_realtime
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT OR REPLACE INTO glossary (marathi, english)
+                VALUES (?, ?)
                 """,
                 (
-                    payload.get("mr") or marathi_term,
                     normalized_term,
                     english_term,
-                    token_count,
-                    first_token,
-                    prefix_key,
-                    is_realtime,
                 ),
             )
             inserted += 1
 
-        connection.executemany(
-            "INSERT OR REPLACE INTO glossary_metadata (key, value) VALUES (?, ?)",
-            [
-                ("source_path", str(source_path)),
-                ("realtime_token_limit", str(realtime_token_limit)),
-            ],
-        )
         connection.commit()
     finally:
         connection.close()

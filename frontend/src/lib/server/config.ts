@@ -12,7 +12,7 @@ export function getExtractionBackendUrl(): string {
 }
 
 export function getGlossaryDatabasePath(): string {
-  return process.env.GLOSSARY_DB_PATH || path.resolve(process.cwd(), '..', 'dict', 'glossary.sqlite3')
+  return process.env.GLOSSARY_DB_PATH || path.resolve(process.cwd(), '..', 'sqlite', 'glossary.sqlite3')
 }
 
 export function getTargetLocales(): string[] {

@@ -11,14 +11,11 @@ function main() {
 
   try {
     const termCountRow = database
-      .prepare('SELECT COUNT(*) AS count FROM glossary_terms')
+      .prepare('SELECT COUNT(*) AS count FROM glossary')
       .get() as { count?: number } | undefined
-    const metadataRow = database
-      .prepare("SELECT value FROM glossary_metadata WHERE key = 'realtime_token_limit'")
-      .get() as { value?: string } | undefined
 
     console.log(
-      `Glossary database ready at ${resolvedPath} (${termCountRow?.count ?? 0} terms, realtime token limit ${metadataRow?.value ?? 'unknown'}).`
+      `Glossary database ready at ${resolvedPath} (${termCountRow?.count ?? 0} terms).`
     )
   } finally {
     database.close()

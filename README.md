@@ -49,7 +49,7 @@ frontend/src/lib/server/glossary.ts    SQLite glossary detection
 frontend/src/lib/server/lingo.ts       Lingo.dev client wrapper
 frontend/tests/                        Analyze route and glossary tests
 scripts/build_glossary_sqlite.py       Offline glossary builder
-dict/glossary.sqlite3                  Built glossary artifact (not committed)
+sqlite/glossary.sqlite3                Repo-tracked glossary artifact
 ```
 
 ## Local setup
@@ -58,7 +58,7 @@ dict/glossary.sqlite3                  Built glossary artifact (not committed)
 - Python 3.11 or 3.12
 - Node.js 20+
 - Tesseract OCR if you want scanned PDF support
-- A local glossary source file if you need to build `dict/glossary.sqlite3`
+- The repo-tracked `sqlite/glossary.sqlite3` artifact, or a local source file if you need to rebuild it
 
 ### Install backend dependencies
 
@@ -90,13 +90,14 @@ Backend variables:
 - `BACKEND_PORT`
 - `BACKEND_CORS_ORIGINS`
 - `TESSERACT_LANG`
+- `BACKEND_MAX_UPLOAD_BYTES`
 
 ### Build the glossary database
 
 If you have the source dictionary locally, build the SQLite artifact before using the analyze route:
 
 ```bash
-python scripts/build_glossary_sqlite.py --source ./dict/lingo_dev_mr_en.json --output ./dict/glossary.sqlite3
+python scripts/build_glossary_sqlite.py --source ./sqlite/lingo_dev_mr_en.json --output ./sqlite/glossary.sqlite3
 ```
 
 Then verify that the frontend runtime can actually open it:
@@ -106,7 +107,7 @@ cd frontend
 npm run verify:glossary
 ```
 
-The source dictionary and the generated SQLite artifact are ignored by git. Deployments must provide the built SQLite file separately and set `GLOSSARY_DB_PATH` to its runtime location.
+The generated `sqlite/glossary.sqlite3` artifact is tracked in the repo. `GLOSSARY_DB_PATH` remains available as a runtime override if you need to mount a different glossary file.
 
 ## Run locally
 
@@ -208,7 +209,7 @@ The Next.js app now owns the analysis pipeline. Any production host for the fron
 - `LINGODOTDEV_TARGET_LOCALES`
 - `BACKEND_URL`
 - `GLOSSARY_DB_PATH`
-- A readable SQLite glossary artifact at the configured path
+- A readable SQLite glossary artifact at `sqlite/glossary.sqlite3`, unless `GLOSSARY_DB_PATH` overrides it
 
 Before promoting a deploy, run `npm run verify:glossary` in `frontend/` anywhere the artifact is mounted.
 

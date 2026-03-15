@@ -14,14 +14,21 @@ if str(ROOT_DIR) not in sys.path:
 from scripts.build_glossary_sqlite import build_glossary_sqlite
 
 
+TERM_APPLICATION = "\u0905\u0930\u094d\u091c"
+TERM_MEDICAL_HISTORY = "\u0935\u0948\u0926\u094d\u092f\u0915\u0940\u092f \u092a\u0942\u0930\u094d\u0935\u0935\u0943\u0924\u094d\u0924"
+TERM_SENTENCE = (
+    "\u0939\u0940 \u0916\u0942\u092a \u092e\u094b\u0920\u0940 "
+    "\u091a\u093e\u091a\u0923\u0940 \u0938\u0902\u091c\u094d\u091e\u093e \u0906\u0939\u0947"
+)
+
 SAMPLE_DICTIONARY = {
-    "अर्ज": {"mr": "अर्ज", "en": "Application; petition"},
-    "वैद्यकीय पूर्ववृत्त": {
-        "mr": "वैद्यकीय पूर्ववृत्त",
+    TERM_APPLICATION: {"mr": TERM_APPLICATION, "en": "Application; petition"},
+    TERM_MEDICAL_HISTORY: {
+        "mr": TERM_MEDICAL_HISTORY,
         "en": "Medical history; previous record",
     },
-    "ही खूप मोठी चाचणी संज्ञा आहे": {
-        "mr": "ही खूप मोठी चाचणी संज्ञा आहे",
+    TERM_SENTENCE: {
+        "mr": TERM_SENTENCE,
         "en": "Sentence-like term",
     },
 }
@@ -50,36 +57,33 @@ class GlossarySqliteBuilderTests(unittest.TestCase):
             try:
                 terms = connection.execute(
                     """
-                    SELECT normalized_term, english_term, token_count, is_realtime
-                    FROM glossary_terms
-                    ORDER BY normalized_term
+                    SELECT marathi, english
+                    FROM glossary
                     """
                 ).fetchall()
+                columns = connection.execute("PRAGMA table_info('glossary')").fetchall()
                 indexes = {
                     row[1]
                     for row in connection.execute(
-                        "PRAGMA index_list('glossary_terms')"
+                        "PRAGMA index_list('glossary')"
                     ).fetchall()
                 }
-                metadata = dict(
-                    connection.execute(
-                        "SELECT key, value FROM glossary_metadata"
-                    ).fetchall()
-                )
             finally:
                 connection.close()
 
-            self.assertEqual(
+            self.assertCountEqual(
                 terms,
                 [
-                    ("अर्ज", "application", 1, 1),
-                    ("वैद्यकीय पूर्ववृत्त", "medical history", 2, 1),
-                    ("ही खूप मोठी चाचणी संज्ञा आहे", "sentence-like term", 6, 0),
+                    (TERM_APPLICATION, "application"),
+                    (TERM_MEDICAL_HISTORY, "medical history"),
+                    (TERM_SENTENCE, "sentence-like term"),
                 ],
             )
-            self.assertIn("idx_glossary_terms_normalized_term", indexes)
-            self.assertIn("idx_glossary_terms_runtime_lookup", indexes)
-            self.assertEqual(metadata["realtime_token_limit"], "3")
+            self.assertEqual(
+                [(row[1], row[2], row[3], row[5]) for row in columns],
+                [("marathi", "TEXT", 0, 1), ("english", "TEXT", 1, 0)],
+            )
+            self.assertIn("idx_marathi", indexes)
 
     def test_builder_cli_writes_sqlite_output(self):
         with tempfile.TemporaryDirectory() as temp_dir:

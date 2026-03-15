@@ -89,14 +89,9 @@ jobs:
         working-directory: frontend
         run: npm test
 
-      - name: Verify glossary artifact when present
+      - name: Verify glossary artifact
         working-directory: frontend
-        run: |
-          if [ -f ../dict/glossary.sqlite3 ]; then
-            npm run verify:glossary
-          else
-            echo "Skipping glossary verification because dict/glossary.sqlite3 is not present."
-          fi
+        run: npm run verify:glossary
 
       - name: Build frontend
         working-directory: frontend

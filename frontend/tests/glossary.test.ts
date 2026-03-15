@@ -7,33 +7,22 @@ import Database from 'better-sqlite3'
 import { detectGlossaryHits } from '../src/lib/server/glossary'
 
 
+const TERM_APPLICATION = '\u0905\u0930\u094d\u091c'
+const TERM_MEDICAL_HISTORY = '\u0935\u0948\u0926\u094d\u092f\u0915\u0940\u092f \u092a\u0942\u0930\u094d\u0935\u0935\u0943\u0924\u094d\u0924'
+const TEXT_APPLICATION = '\u0938\u0926\u0930 \u0905\u0930\u094d\u091c \u0938\u093e\u0926\u0930 \u0915\u0930\u093e'
+const TEXT_MEDICAL_HISTORY = '\u0935\u0948\u0926\u094d\u092f\u0915\u0940\u092f \u092a\u0942\u0930\u094d\u0935\u0935\u0943\u0924\u094d\u0924 \u0938\u093e\u0926\u0930 \u0915\u0930\u093e'
+
 function createTempGlossary() {
   const databasePath = path.join(os.tmpdir(), `lokbhasha-glossary-${Date.now()}-${Math.random()}.sqlite3`)
   const database = new Database(databasePath)
   database.exec(`
-    CREATE TABLE glossary_terms (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      marathi_term TEXT NOT NULL,
-      normalized_term TEXT NOT NULL UNIQUE,
-      english_term TEXT NOT NULL,
-      token_count INTEGER NOT NULL,
-      first_token TEXT NOT NULL,
-      prefix_key TEXT NOT NULL,
-      is_realtime INTEGER NOT NULL DEFAULT 1
+    CREATE TABLE glossary (
+      marathi TEXT PRIMARY KEY,
+      english TEXT NOT NULL
     );
 
-    CREATE TABLE glossary_metadata (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL
-    );
-
-    CREATE INDEX idx_glossary_terms_runtime_lookup
-      ON glossary_terms(is_realtime, token_count, first_token, prefix_key);
+    CREATE INDEX idx_marathi ON glossary(marathi);
   `)
-  database.prepare(`
-    INSERT INTO glossary_metadata (key, value)
-    VALUES ('realtime_token_limit', '4')
-  `).run()
 
   return { database, databasePath }
 }
@@ -41,24 +30,16 @@ function createTempGlossary() {
 test('detectGlossaryHits returns structured exact matches with offsets', () => {
   const { database, databasePath } = createTempGlossary()
   database.prepare(`
-    INSERT INTO glossary_terms (
-      marathi_term,
-      normalized_term,
-      english_term,
-      token_count,
-      first_token,
-      prefix_key,
-      is_realtime
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run('अर्ज', 'अर्ज', 'application', 1, 'अर्ज', 'अर्ज', 1)
+    INSERT INTO glossary (marathi, english) VALUES (?, ?)
+  `).run(TERM_APPLICATION, 'application')
   database.close()
 
-  const hits = detectGlossaryHits('सदर अर्ज सादर करा', { databasePath })
+  const hits = detectGlossaryHits(TEXT_APPLICATION, { databasePath })
 
   assert.equal(hits.length, 1)
   assert.deepEqual(hits[0], {
-    canonicalTerm: 'अर्ज',
-    matchedText: 'अर्ज',
+    canonicalTerm: TERM_APPLICATION,
+    matchedText: TERM_APPLICATION,
     meaning: 'application',
     start: 4,
     end: 8,
@@ -70,24 +51,16 @@ test('detectGlossaryHits returns structured exact matches with offsets', () => {
 test('detectGlossaryHits prefers longer multiword glossary terms', () => {
   const { database, databasePath } = createTempGlossary()
   const insertTerm = database.prepare(`
-    INSERT INTO glossary_terms (
-      marathi_term,
-      normalized_term,
-      english_term,
-      token_count,
-      first_token,
-      prefix_key,
-      is_realtime
-    ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO glossary (marathi, english) VALUES (?, ?)
   `)
-  insertTerm.run('पूर्ववृत्त', 'पूर्ववृत्त', 'history', 1, 'पूर्ववृत्त', 'पूर्व', 1)
-  insertTerm.run('वैद्यकीय पूर्ववृत्त', 'वैद्यकीय पूर्ववृत्त', 'medical history', 2, 'वैद्यकीय', 'वैद्', 1)
+  insertTerm.run('\u092a\u0942\u0930\u094d\u0935\u0935\u0943\u0924\u094d\u0924', 'history')
+  insertTerm.run(TERM_MEDICAL_HISTORY, 'medical history')
   database.close()
 
-  const hits = detectGlossaryHits('वैद्यकीय पूर्ववृत्त सादर करा', { databasePath })
+  const hits = detectGlossaryHits(TEXT_MEDICAL_HISTORY, { databasePath })
 
   assert.equal(hits.length, 1)
-  assert.equal(hits[0]?.canonicalTerm, 'वैद्यकीय पूर्ववृत्त')
+  assert.equal(hits[0]?.canonicalTerm, TERM_MEDICAL_HISTORY)
   assert.equal(hits[0]?.meaning, 'medical history')
 })
 
@@ -98,7 +71,7 @@ test('detectGlossaryHits throws a clear error when the glossary database is miss
   )
 
   assert.throws(
-    () => detectGlossaryHits('अर्ज सादर करा', { databasePath: missingDatabasePath }),
+    () => detectGlossaryHits(TEXT_APPLICATION, { databasePath: missingDatabasePath }),
     /Glossary database not found/
   )
 })
@@ -118,7 +91,27 @@ test('detectGlossaryHits throws a clear error when the glossary schema is invali
   database.close()
 
   assert.throws(
-    () => detectGlossaryHits('अर्ज सादर करा', { databasePath: invalidDatabasePath }),
+    () => detectGlossaryHits(TEXT_APPLICATION, { databasePath: invalidDatabasePath }),
     /missing required glossary schema/
+  )
+})
+
+test('detectGlossaryHits throws a clear error when the glossary index is missing', () => {
+  const invalidDatabasePath = path.join(
+    os.tmpdir(),
+    `lokbhasha-invalid-glossary-index-${Date.now()}-${Math.random()}.sqlite3`
+  )
+  const database = new Database(invalidDatabasePath)
+  database.exec(`
+    CREATE TABLE glossary (
+      marathi TEXT PRIMARY KEY,
+      english TEXT NOT NULL
+    );
+  `)
+  database.close()
+
+  assert.throws(
+    () => detectGlossaryHits(TEXT_APPLICATION, { databasePath: invalidDatabasePath }),
+    /missing required glossary index/
   )
 })

@@ -2,6 +2,7 @@ import Database from 'better-sqlite3'
 import fs from 'node:fs'
 import path from 'node:path'
 
+import { getGlossaryDatabasePath } from './config'
 import type { GlossaryHit } from './types'
 
 
@@ -9,7 +10,8 @@ const DEVANAGARI_PATTERN = /[\u0900-\u097F]+/gu
 const WHITESPACE_PATTERN = /\s+/g
 const DEFAULT_RUNTIME_TOKEN_LIMIT = 5
 const DATABASES_BY_PATH = new Map<string, Database.Database>()
-const REQUIRED_GLOSSARY_TABLES = ['glossary_terms', 'glossary_metadata'] as const
+const REQUIRED_GLOSSARY_TABLE = 'glossary'
+const REQUIRED_GLOSSARY_INDEX = 'idx_marathi'
 
 type TokenSpan = {
   text: string
@@ -27,9 +29,8 @@ type CandidateOccurrence = {
 }
 
 type GlossaryRow = {
-  marathi_term: string
-  normalized_term: string
-  english_term: string
+  marathi: string
+  english: string
 }
 
 export class GlossaryDatabaseError extends Error {
@@ -60,30 +61,37 @@ function tokenizeMarathiText(text: string): TokenSpan[] {
 }
 
 function assertGlossarySchema(database: Database.Database, databasePath: string) {
-  const rows = database
+  const tableRow = database
     .prepare(
       `
         SELECT name
         FROM sqlite_master
         WHERE type = 'table'
-          AND name IN (${REQUIRED_GLOSSARY_TABLES.map(() => '?').join(', ')})
+          AND name = ?
       `
     )
-    .all(...REQUIRED_GLOSSARY_TABLES) as Array<{ name: string }>
-  const tableNames = new Set(rows.map((row) => row.name))
-  const missingTables = REQUIRED_GLOSSARY_TABLES.filter((tableName) => !tableNames.has(tableName))
-  if (missingTables.length) {
+    .get(REQUIRED_GLOSSARY_TABLE) as { name?: string } | undefined
+
+  if (!tableRow?.name) {
     throw new GlossaryDatabaseError(
-      `Glossary database at ${databasePath} is missing required glossary schema: ${missingTables.join(', ')}.`
+      `Glossary database at ${databasePath} is missing required glossary schema: ${REQUIRED_GLOSSARY_TABLE}.`
     )
   }
 
-  const metadataRow = database
-    .prepare("SELECT value FROM glossary_metadata WHERE key = 'realtime_token_limit'")
-    .get() as { value?: string } | undefined
-  if (!metadataRow?.value) {
+  const indexRow = database
+    .prepare(
+      `
+        SELECT name
+        FROM sqlite_master
+        WHERE type = 'index'
+          AND name = ?
+      `
+    )
+    .get(REQUIRED_GLOSSARY_INDEX) as { name?: string } | undefined
+
+  if (!indexRow?.name) {
     throw new GlossaryDatabaseError(
-      `Glossary database at ${databasePath} is missing required glossary metadata: realtime_token_limit.`
+      `Glossary database at ${databasePath} is missing required glossary index: ${REQUIRED_GLOSSARY_INDEX}.`
     )
   }
 }
@@ -121,14 +129,6 @@ export function openGlossaryDatabase(databasePath: string) {
   return database
 }
 
-function getRuntimeTokenLimit(database: Database.Database): number {
-  const row = database
-    .prepare("SELECT value FROM glossary_metadata WHERE key = 'realtime_token_limit'")
-    .get() as { value?: string } | undefined
-  const parsedLimit = Number.parseInt(row?.value ?? '', 10)
-  return Number.isFinite(parsedLimit) ? parsedLimit : DEFAULT_RUNTIME_TOKEN_LIMIT
-}
-
 function queryExactMatches(
   database: Database.Database,
   normalizedTerms: string[]
@@ -141,15 +141,14 @@ function queryExactMatches(
   const rows = database
     .prepare(
       `
-        SELECT marathi_term, normalized_term, english_term
-        FROM glossary_terms
-        WHERE is_realtime = 1
-          AND normalized_term IN (${placeholders})
+        SELECT marathi, english
+        FROM glossary
+        WHERE marathi IN (${placeholders})
       `
     )
     .all(...normalizedTerms) as GlossaryRow[]
 
-  return new Map(rows.map((row) => [row.normalized_term, row]))
+  return new Map(rows.map((row) => [row.marathi, row]))
 }
 
 export function detectGlossaryHits(
@@ -163,24 +162,23 @@ export function detectGlossaryHits(
     return []
   }
 
-  const databasePath = options?.databasePath ?? path.resolve(process.cwd(), '..', 'dict', 'glossary.sqlite3')
+  const databasePath = options?.databasePath ?? getGlossaryDatabasePath()
   const database = openGlossaryDatabase(databasePath)
   const tokens = tokenizeMarathiText(text)
   if (!tokens.length) {
     return []
   }
 
-  const runtimeTokenLimit = Math.max(1, getRuntimeTokenLimit(database))
   const occupiedTokenIndexes = new Set<number>()
   const hits: GlossaryHit[] = []
 
-  for (let tokenLength = runtimeTokenLimit; tokenLength >= 1; tokenLength -= 1) {
+  for (let tokenLength = DEFAULT_RUNTIME_TOKEN_LIMIT; tokenLength >= 1; tokenLength -= 1) {
     const candidateMap = new Map<string, CandidateOccurrence[]>()
 
     for (let startTokenIndex = 0; startTokenIndex <= tokens.length - tokenLength; startTokenIndex += 1) {
       const endTokenIndex = startTokenIndex + tokenLength - 1
       const normalizedTerm = normalizeMarathiTerm(
-        tokens.slice(startTokenIndex, endTokenIndex + 1).map((token) => token.text).join(' ')
+        tokens.slice(startTokenIndex, endTokenIndex + 1).map((token) => token.normalized).join(' ')
       )
       const occurrences = candidateMap.get(normalizedTerm) ?? []
       occurrences.push({
@@ -218,9 +216,9 @@ export function detectGlossaryHits(
         }
 
         hits.push({
-          canonicalTerm: row.marathi_term,
+          canonicalTerm: row.marathi,
           matchedText: text.slice(occurrence.start, occurrence.end),
-          meaning: row.english_term,
+          meaning: row.english,
           start: occurrence.start,
           end: occurrence.end,
           matchType: 'exact',

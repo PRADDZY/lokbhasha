@@ -1,4 +1,4 @@
-export type GlossaryMatchType = 'exact' | 'fuzzy'
+export type GlossaryMatchType = 'exact'
 
 export type GlossaryHit = {
   canonicalTerm: string
