@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "tsx src/server.ts",
-    "test": "tsx --test tests/**/*.test.ts",
+    "test": "tsx --test tests/*.test.ts",
     "check": "tsc --noEmit -p tsconfig.json",
     "verify:glossary": "tsx scripts/verify-glossary.ts"
   },
