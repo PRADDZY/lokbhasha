@@ -18,7 +18,8 @@ class APIContractTests(unittest.TestCase):
     def setUpClass(cls):
         cls.client = TestClient(app)
 
-    def test_translate_endpoint_returns_required_keys(self):
+    @patch("main.detect_glossary_terms", return_value={"अर्ज": "application"})
+    def test_translate_endpoint_returns_required_keys(self, _mock_glossary):
         response = self.client.post(
             "/translate",
             json={"marathi_text": "सदर अधिसूचनेन्वये अर्ज सादर करावा"},
@@ -47,8 +48,9 @@ class APIContractTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("Only PDF uploads are supported", response.json().get("detail", ""))
 
+    @patch("main.detect_glossary_terms", return_value={"अर्ज": "application"})
     @patch("main._extract_pdf_text_safe")
-    def test_upload_endpoint_returns_contract_shape(self, mock_extract):
+    def test_upload_endpoint_returns_contract_shape(self, mock_extract, _mock_glossary):
         class _Result:
             text = "सदर अधिसूचनेन्वये अर्ज सादर करावा"
             confidence = 0.91
