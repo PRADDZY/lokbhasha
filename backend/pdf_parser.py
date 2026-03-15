@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from io import BytesIO
 import os
+from pathlib import Path
 
 import fitz
 from PIL import Image
@@ -15,6 +16,7 @@ from text_processor import clean_extracted_text, estimate_text_confidence
 
 OCR_RENDER_SCALE = 2.0
 MIN_DIGITAL_TEXT_LENGTH = 40
+UPLOADS_ROOT = (Path(__file__).resolve().parents[1] / "uploads").resolve()
 
 
 @dataclass(frozen=True)
@@ -52,8 +54,17 @@ def _extract_ocr_text(document: fitz.Document) -> str:
     return clean_extracted_text("\n\n".join(page_text))
 
 
+def _validated_pdf_path(pdf_path: str | Path) -> Path:
+    candidate = Path(pdf_path).resolve(strict=True)
+    if candidate.parent != UPLOADS_ROOT or candidate.suffix.lower() != ".pdf":
+        raise RuntimeError("PDF extraction only supports files from the managed upload directory.")
+
+    return candidate
+
+
 def extract_pdf_text(pdf_path: str) -> PDFExtractionResult:
-    document = fitz.open(pdf_path)
+    validated_path = _validated_pdf_path(pdf_path)
+    document = fitz.open(str(validated_path))
     try:
         digital_text = _extract_digital_text(document)
         if _has_meaningful_text(digital_text):
