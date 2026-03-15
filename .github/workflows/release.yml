@@ -1,21 +1,8 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: "Release tag (example: v0.4.0)"
-        required: true
-        type: string
-      title:
-        description: "Release title"
-        required: true
-        type: string
-      prerelease:
-        description: "Mark as pre-release"
-        required: true
-        type: boolean
-        default: false
+  push:
+    tags: ['v*']
 
 permissions: {}
 
@@ -33,33 +20,19 @@ jobs:
           fetch-depth: 0
 
       - name: Validate tag format
+        env:
+          TAG: ${{ github.ref_name }}
         run: |
-          TAG="${{ inputs.tag }}"
           if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]; then
             echo "Invalid tag format: $TAG"
             echo "Expected semantic version tag like v1.2.3 or v1.2.3-rc.1"
             exit 1
           fi
 
-      - name: Fail if tag already exists
-        run: |
-          TAG="${{ inputs.tag }}"
-          if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Tag already exists: $TAG"
-            exit 1
-          fi
-
-      - name: Create and push tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "${{ inputs.tag }}" -m "${{ inputs.title }}"
-          git push origin "${{ inputs.tag }}"
-
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ inputs.tag }}
-          name: ${{ inputs.title }}
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
           generate_release_notes: true
-          prerelease: ${{ inputs.prerelease }}
+          prerelease: ${{ contains(github.ref_name, '-') }}

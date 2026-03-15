@@ -20,7 +20,7 @@
     "diff": "8.0.3",
     "fast-xml-parser": "5.5.5",
     "lodash": "4.17.23",
-    "next": "15.5.10",
+    "next": "16.1.6",
     "tmp": "0.2.5"
   },
   "devDependencies": {
