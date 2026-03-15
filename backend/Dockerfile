@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r /app/requirements.txt
 
 COPY backend /app
-COPY uploads /uploads
+RUN mkdir -p /uploads
 
 ENV BACKEND_PORT=5000
 EXPOSE 5000
