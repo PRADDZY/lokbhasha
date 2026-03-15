@@ -14,11 +14,16 @@ type EnglishMatch = {
   text: string
 }
 
+type MarathiMatch = {
+  start: number
+  end: number
+  text: string
+}
+
 type GlossaryLink = {
   id: string
   marathiText: string
-  marathiStart: number
-  marathiEnd: number
+  marathiMatches: MarathiMatch[]
   englishMeaning: string
   englishMatches: EnglishMatch[]
 }
@@ -88,6 +93,11 @@ export function buildLinkedGlossaryState(input: {
     const existing = uniqueLinks.get(id)
 
     if (existing) {
+      existing.marathiMatches.push({
+        start: hit.start,
+        end: hit.end,
+        text: hit.matchedText,
+      })
       continue
     }
 
@@ -110,8 +120,13 @@ export function buildLinkedGlossaryState(input: {
     uniqueLinks.set(id, {
       id,
       marathiText: hit.matchedText,
-      marathiStart: hit.start,
-      marathiEnd: hit.end,
+      marathiMatches: [
+        {
+          start: hit.start,
+          end: hit.end,
+          text: hit.matchedText,
+        },
+      ],
       englishMeaning,
       englishMatches,
     })
@@ -120,12 +135,14 @@ export function buildLinkedGlossaryState(input: {
   const links = [...uniqueLinks.values()]
   const marathiParts = buildParts(
     input.marathiText,
-    links.map((link) => ({
-      start: link.marathiStart,
-      end: link.marathiEnd,
-      linkId: link.id,
-      title: link.englishMeaning,
-    }))
+    links.flatMap((link) =>
+      link.marathiMatches.map((match) => ({
+        start: match.start,
+        end: match.end,
+        linkId: link.id,
+        title: link.englishMeaning,
+      }))
+    )
   )
   const englishParts = buildParts(
     input.englishCanonical,
