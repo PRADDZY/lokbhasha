@@ -1,305 +1,225 @@
-# LokBhasha — Government Marathi Document Translator
+# LokBhasha
 
-**Making government language understandable.**
+LokBhasha turns Marathi government documents into an English-first, multi-language analysis pipeline. PDF extraction stays in FastAPI, SQLite is used only for glossary detection, and all translation and localization are delegated to Lingo.dev from the Next.js server runtime.
 
-LokBhasha is a web application that transforms complex Marathi government circulars into simple, actionable English. It extracts text from PDFs or pasted content, translates it using Lingo.dev, simplifies bureaucratic language, and highlights critical terms.
+## Current pipeline
 
-## Features
+1. Upload a PDF or paste Marathi text.
+2. Extract Marathi text from the PDF with the Python backend when needed.
+3. Detect glossary terms from a SQLite terminology store.
+4. Translate Marathi to English with Lingo.dev.
+5. Treat English as the canonical document output.
+6. Localize canonical English into the configured target locales with Lingo.dev.
+7. Render glossary hits, canonical English, simplified English, actions, and localized outputs in the frontend.
 
-- 📄 **PDF & Text Input** — Upload government circulars (PDFs) or paste Marathi text
-- 🔤 **Smart Text Extraction** — Handles both digital PDFs and scanned documents (OCR)
-- 🌐 **Intelligent Translation** — Marathi to English using Lingo.dev with glossary hints
-- 📖 **Dictionary Highlighting** — Marks complex government terms with definitions
-- ✍️ **Plain English Summary** — Converts bureaucratic language to simple explanations
-- ✅ **Action Extraction** — Identifies key actions, deadlines, and requirements
-- 🎨 **Professional UI** — Clean, accessible Next.js + Tailwind interface
+## Responsibilities
 
-## Tech Stack
+### SQLite glossary
+- Stores Marathi to English terminology only.
+- Detects glossary hits in Marathi source text.
+- Produces compact terminology hints for the current document.
+- Does not perform translation or localization.
+
+### Lingo.dev
+- Performs Marathi to English translation.
+- Performs English to target-locale localization.
+- Remains the only translation/localization engine in the application.
+
+## Stack
 
 ### Backend
-- **Framework:** FastAPI (Python)
-- **PDF Processing:** PyMuPDF + pytesseract
-- **Translation:** Lingo.dev API
-- **Text Matching:** rapidfuzz
-- **Server:** Uvicorn
+- FastAPI for health checks and PDF extraction.
+- PyMuPDF plus pytesseract for PDF and OCR extraction.
+- Uvicorn for local and container runtime.
 
 ### Frontend
-- **Framework:** Next.js + TypeScript
-- **Styling:** Tailwind CSS
-- **Deployment:** Vercel
+- Next.js App Router with a Node runtime route handler for `/api/analyze`.
+- `better-sqlite3` for indexed glossary lookups.
+- `lingo.dev` JavaScript SDK for translation and localization.
 
-## Project Structure
+## Key paths
 
-```
-lokbhasha/
-├── backend/
-│   ├── main.py                 # FastAPI server
-│   ├── dictionary.py           # Dictionary loading
-│   ├── glossary.py             # Glossary detection
-│   ├── pdf_parser.py           # PDF extraction
-│   ├── translator.py           # Lingo.dev integration
-│   ├── simplifier.py           # Text simplification
-│   ├── actions.py              # Action extraction
-│   └── requirements.txt
-├── frontend/
-│   ├── pages/
-│   │   ├── index.tsx           # Upload page
-│   │   └── result.tsx          # Results page
-│   ├── components/
-│   ├── lib/
-│   │   └── api.ts              # API client
-│   └── package.json
-├── dict/                        # Marathi dictionary files
-│   └── lingo_dev_mr_en.json
-├── uploads/                     # Temporary uploads
-├── .env.example
-├── .gitignore
-└── README.md
+```text
+backend/main.py                        FastAPI extraction service
+backend/pdf_parser.py                  PDF and OCR extraction
+backend/tests/                         Backend contract and pipeline tests
+frontend/src/app/api/analyze/route.ts  Primary analysis endpoint
+frontend/src/lib/server/analysis.ts    Marathi -> English -> locales flow
+frontend/src/lib/server/glossary.ts    SQLite glossary detection
+frontend/src/lib/server/lingo.ts       Lingo.dev client wrapper
+frontend/tests/                        Analyze route and glossary tests
+scripts/build_glossary_sqlite.py       Offline glossary builder
+dict/glossary.sqlite3                  Built glossary artifact (not committed)
 ```
 
-## Setup & Installation
+## Local setup
 
 ### Prerequisites
-- Python 3.11 or 3.12 recommended
-- Node.js 18+
-- Tesseract OCR (for scanned PDF support)
+- Python 3.11 or 3.12
+- Node.js 20+
+- Tesseract OCR if you want scanned PDF support
+- A local glossary source file if you need to build `dict/glossary.sqlite3`
 
-### Backend Setup
+### Install backend dependencies
 
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-### Frontend Setup
+### Install frontend dependencies
 
 ```bash
 cd frontend
-npm install
+npm ci
 ```
 
-### Environment Configuration
+### Configure environment
 
-1. Copy `.env.example` to `.env`
+Use `.env.example` as the shared reference for required variables.
+
+Frontend or Node runtime variables:
+- `LINGODOTDEV_API_KEY`
+- `LINGODOTDEV_TARGET_LOCALES`
+- `BACKEND_URL`
+- `GLOSSARY_DB_PATH`
+
+Backend variables:
+- `BACKEND_PORT`
+- `BACKEND_CORS_ORIGINS`
+- `TESSERACT_LANG`
+
+### Build the glossary database
+
+If you have the source dictionary locally, build the SQLite artifact before using the analyze route:
+
 ```bash
-cp .env.example .env
+python scripts/build_glossary_sqlite.py --source ./dict/lingo_dev_mr_en.json --output ./dict/glossary.sqlite3
 ```
 
-2. Add your Lingo.dev API key:
-```
-LINGO_DEV_API_KEY=your_actual_api_key_here
-```
+The source dictionary and the generated SQLite artifact are ignored by git. Deployments must provide the built SQLite file separately and set `GLOSSARY_DB_PATH` to its runtime location.
 
-3. Keep mock mode enabled until the real Lingo.dev integration is wired:
-```
-LINGO_DEV_USE_MOCK=true
-TESSERACT_LANG=mar+eng
-```
+## Run locally
 
-## Running the Application
-
-### Start Backend Server
+### Start the extraction backend
 
 ```bash
 cd backend
 uvicorn main:app --reload --port 5000
 ```
 
-Backend will be available at `http://localhost:5000`
-
-### Start Frontend Development Server
+### Start the frontend
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Frontend will be available at `http://localhost:3000`
+The browser app runs at `http://localhost:3000` and calls the extraction backend at `http://localhost:5000` by default.
 
-## API Endpoints
+## Public API
 
-### POST `/upload`
-Upload a PDF file and extract Marathi text with detected glossary terms.
+### POST `/extract`
 
-**Request:**
+FastAPI endpoint for PDF extraction only.
+
 ```bash
-curl -X POST -F "file=@circular.pdf" http://localhost:5000/upload
+curl -X POST -F "file=@circular.pdf" http://localhost:5000/extract
 ```
 
-**Response:**
+Response shape:
+
 ```json
 {
-  "text": "अधिसूचना...",
-  "glossary": {
-    "अधिसूचना": "notification",
-    "अर्ज": "application"
-  },
+  "text": "Extracted Marathi text",
   "confidence": 0.95
 }
 ```
 
-### POST `/translate`
-Translate Marathi text to English with all processing steps.
+### POST `/api/analyze`
 
-**Request:**
+Primary application endpoint exposed by Next.js. Accepts a PDF upload or raw Marathi text, detects glossary hits from SQLite, translates with Lingo.dev, localizes from English, and returns the complete analysis payload.
+
+Example response shape:
+
 ```json
 {
-  "marathi_text": "सदर अधिसूचनेन्वये अर्ज सादर करावा"
-}
-```
-
-**Response:**
-```json
-{
-  "marathi": "सदर अधिसूचनेन्वये अर्ज सादर करावा",
-  "english": "[MOCK] English translation placeholder for: सदर अधिसूचनेन्वये अर्ज सादर करावा",
-  "simplified": "[PLAIN] English translation placeholder for: सदर अधिसूचनेन्वये अर्ज सादर करावा",
-  "actions": [
+  "source": "pdf",
+  "marathiText": "मराठी मजकूर",
+  "extractionConfidence": 0.95,
+  "glossaryHits": [
     {
-      "action": "Submit application before March 31",
-      "deadline": null,
-      "requirement": "Submit application before March 31"
+      "canonicalTerm": "अर्ज",
+      "matchedText": "अर्ज",
+      "meaning": "application",
+      "start": 12,
+      "end": 16,
+      "matchType": "exact",
+      "confidence": 1
     }
   ],
-  "glossary_terms": {
-    "अधिसूचना": "notification",
-    "अर्ज": "application"
-  }
+  "terminologyHints": {
+    "अर्ज": ["application"]
+  },
+  "englishCanonical": "Submit the application.",
+  "localizedText": {
+    "hi": "आवेदन जमा करें।",
+    "gu": "અરજી સબમિટ કરો."
+  },
+  "simplifiedEnglish": "Submit the application.",
+  "actions": [
+    {
+      "action": "Submit the application",
+      "deadline": null,
+      "requirement": null
+    }
+  ]
 }
 ```
 
-## Deployment
+Legacy backend endpoints `/upload` and `/translate` still exist for compatibility and tests, but they are not the primary application flow.
 
-### Frontend (Vercel)
+## Deployment notes
+
+### Backend
+
+`render.yaml` deploys the FastAPI extraction service. Its runtime only needs extraction-related configuration:
+- `BACKEND_PORT`
+- `BACKEND_CORS_ORIGINS`
+- `TESSERACT_LANG`
+
+Procfile-based hosts should start the backend from the `backend` directory:
+
 ```bash
-git push origin main
-# Auto-deploys via Vercel GitHub integration
+web: cd backend && uvicorn main:app --host 0.0.0.0 --port ${PORT:-5000}
 ```
 
-### Backend (Cloud Run / Render / Railway)
-```bash
-# Build and push Docker image
-docker build -f backend/Dockerfile -t lokbhasha-backend .
-docker push your-registry/lokbhasha-backend
-```
+### Frontend
 
-One-click deployment files included:
-- `render.yaml` for Render Blueprint deployments
-- `railway.json` for Railway Docker deployments
+The Next.js app now owns the analysis pipeline. Any production host for the frontend must provide:
+- `LINGODOTDEV_API_KEY`
+- `LINGODOTDEV_TARGET_LOCALES`
+- `BACKEND_URL`
+- `GLOSSARY_DB_PATH`
+- A readable SQLite glossary artifact at the configured path
 
-Runtime environment variables:
-- `BACKEND_PORT` (default `5000`)
-- `BACKEND_CORS_ORIGINS` (comma-separated allowed origins)
-- `LINGO_DEV_USE_MOCK` (`true` for mock mode, `false` for real API attempts)
+## CI and release workflows
 
-Procfile-based platforms can run:
-```bash
-web: uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-5000}
-```
-
-## Continuous Integration
-
-GitHub Actions workflow:
-- `.github/workflows/ci.yml`
-- `.github/workflows/deploy.yml`
-- `.github/workflows/release.yml`
-
-Checks on every push and pull request:
-- Backend unit and API contract tests
-- Backend smoke API check (`/health` and `/translate`)
+GitHub Actions currently runs:
+- Backend unit and contract tests from `backend/tests`
+- A backend smoke check against `/health` and `/extract`
+- Frontend tests
 - Frontend production build
 
-## Deployment Automation
-
-Deployment workflow:
-- `.github/workflows/deploy.yml`
-
-Trigger behavior:
-- Runs automatically after the CI workflow succeeds on `master`/`main`
-- Can also be triggered manually with `workflow_dispatch`
-
-Required GitHub secrets:
-- `RENDER_DEPLOY_HOOK_URL` for backend deploy hook
-- `VERCEL_DEPLOY_HOOK_URL` for frontend deploy hook
-
-## Release Management
-
-Manual release workflow:
-- `.github/workflows/release.yml`
-
-How to cut a release:
-1. Open Actions and run the `Release` workflow manually.
-2. Provide a semantic tag like `v0.5.0`.
-3. Provide a release title.
-4. Set pre-release mode when needed.
-
-The workflow validates the tag format, creates/pushes the tag, and publishes a GitHub release with generated notes.
-
-## Branch Protection
-
-Recommended branch protection for `master`:
-- Require pull request before merging
-- Require status checks to pass before merging
-- Require conversation resolution before merging
-- Restrict force pushes and branch deletion
-
-Recommended required status checks:
-- `Backend Tests`
-- `Backend Smoke API`
-- `Frontend Build`
-
-## Roadmap
-
-### Current MVP (Phase 1-9)
-- ✅ PDF extraction + OCR
-- ✅ Glossary detection from dictionary
-- ✅ Lingo.dev translation integration
-- ✅ Text simplification
-- ✅ Action extraction
-- ✅ Frontend UI (upload + results)
-- ✅ Full E2E pipeline
-- ✅ Testing & accessibility
-- ✅ Docker deployment ready
-
-### Future Features (Stretch Goals)
-- Hindi translation support
-- Website URL scraping for government notices
-- Advanced action categorization (deadlines, responsible officers)
-- User accounts & document history
-- Mobile app (React Native)
+Deployment automation:
+- `.github/workflows/deploy.yml` triggers deploy hooks after CI
+- `.github/workflows/release.yml` creates tagged GitHub releases
 
 ## Contributing
 
-Contributions are welcome! Please follow these guidelines:
-
-1. Create a feature branch
-```bash
-git checkout -b feature/your-feature-name
-```
-
-2. Make changes and test
-3. Commit with clear messages:
-```bash
-git commit -m "Add feature: description"
-```
-
-4. Push and create a Pull Request
-```bash
-git push origin feature/your-feature-name
-```
-
-## License
-
-MIT License — See LICENSE file for details
-
-## Support
-
-For issues, questions, or feedback:
-- GitHub Issues: https://github.com/PRADDZY/lokbhasha/issues
-- Email: contact@lokbhasha.dev
-
----
-
-**LokBhasha: Making Government Language Understandable** 🇮🇳
+1. Create a feature branch.
+2. Make focused changes.
+3. Run the relevant backend and frontend checks before committing.
+4. Push the branch and open a pull request when ready.
