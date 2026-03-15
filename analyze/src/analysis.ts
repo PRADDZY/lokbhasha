@@ -1,6 +1,13 @@
-import { buildTerminologyHints } from './glossary'
 import { extractActions, simplifyEnglishText } from './english'
-import type { AnalysisResult, AnalysisSource, GlossaryHit, LingoClient } from './types'
+import { buildTerminologyHints } from './terminology'
+import type {
+  AnalysisCoreResult,
+  AnalysisEnrichmentRequest,
+  AnalysisEnrichmentResult,
+  AnalysisSource,
+  GlossaryHit,
+  LingoClient,
+} from './types'
 
 
 type AnalyzeInput = {
@@ -12,13 +19,16 @@ type AnalyzeInput = {
 type AnalyzeDependencies = {
   detectGlossaryHits: (text: string) => GlossaryHit[]
   lingoClient: LingoClient
-  targetLocales: string[]
+}
+
+type EnrichmentDependencies = {
+  lingoClient: LingoClient
 }
 
 export async function analyzeMarathiDocument(
   input: AnalyzeInput,
   dependencies: AnalyzeDependencies
-): Promise<AnalysisResult> {
+): Promise<AnalysisCoreResult> {
   const glossaryHits = dependencies.detectGlossaryHits(input.marathiText)
   const terminologyHints = buildTerminologyHints(glossaryHits)
 
@@ -29,28 +39,45 @@ export async function analyzeMarathiDocument(
     ...(Object.keys(terminologyHints).length ? { hints: terminologyHints } : {}),
   })
 
-  const localizedResults = await dependencies.lingoClient.batchLocalizeText(englishCanonical, {
-    sourceLocale: 'en',
-    targetLocales: dependencies.targetLocales,
-    fast: true,
-  })
-
-  const localizedText = Object.fromEntries(
-    dependencies.targetLocales.map((locale, index) => [locale, localizedResults[index] ?? englishCanonical])
-  )
-
-  const simplifiedEnglish = simplifyEnglishText(englishCanonical)
-  const actions = extractActions(simplifiedEnglish)
-
   return {
     source: input.source,
     marathiText: input.marathiText,
     extractionConfidence: input.extractionConfidence,
     glossaryHits,
-    terminologyHints,
     englishCanonical,
-    localizedText,
-    simplifiedEnglish,
-    actions,
   }
+}
+
+export async function generateAnalysisEnrichment(
+  input: AnalysisEnrichmentRequest,
+  dependencies: EnrichmentDependencies
+): Promise<AnalysisEnrichmentResult> {
+  const result: AnalysisEnrichmentResult = {}
+  let simplifiedEnglish: string | null = null
+
+  if (input.requestedLocales.length) {
+    const localizedResults = await dependencies.lingoClient.batchLocalizeText(input.englishCanonical, {
+      sourceLocale: 'en',
+      targetLocales: input.requestedLocales,
+      fast: true,
+    })
+
+    result.localizedText = Object.fromEntries(
+      input.requestedLocales.map((locale, index) => [locale, localizedResults[index] ?? input.englishCanonical])
+    )
+  }
+
+  if (input.includePlainExplanation || input.includeActions) {
+    simplifiedEnglish = simplifyEnglishText(input.englishCanonical)
+  }
+
+  if (input.includePlainExplanation && simplifiedEnglish) {
+    result.simplifiedEnglish = simplifiedEnglish
+  }
+
+  if (input.includeActions && simplifiedEnglish) {
+    result.actions = extractActions(simplifiedEnglish)
+  }
+
+  return result
 }

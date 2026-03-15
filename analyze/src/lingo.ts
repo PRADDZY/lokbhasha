@@ -1,17 +1,11 @@
 import { LingoDotDevEngine } from 'lingo.dev/sdk'
 
 import { getLingoApiKey } from './config'
+import { LingoConfigurationError } from './errors'
 import type { LingoClient } from './types'
 
 
 let cachedClient: LingoClient | null = null
-
-export class LingoConfigurationError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'LingoConfigurationError'
-  }
-}
 
 export function createLingoClient(): LingoClient {
   if (cachedClient) {

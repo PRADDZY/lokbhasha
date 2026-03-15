@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import { getGlossaryDatabasePath } from './config'
+import { GlossaryDatabaseError } from './errors'
 import type { GlossaryHit } from './types'
 
 
@@ -31,13 +32,6 @@ type CandidateOccurrence = {
 type GlossaryRow = {
   marathi: string
   english: string
-}
-
-export class GlossaryDatabaseError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'GlossaryDatabaseError'
-  }
 }
 
 export function normalizeMarathiTerm(term: string): string {
@@ -231,22 +225,3 @@ export function detectGlossaryHits(
   return hits.sort((left, right) => left.start - right.start)
 }
 
-export function buildTerminologyHints(
-  glossaryHits: GlossaryHit[],
-  maxHints = 12
-): Record<string, string[]> {
-  const hints = new Map<string, string[]>()
-
-  for (const hit of glossaryHits) {
-    if (hints.has(hit.canonicalTerm)) {
-      continue
-    }
-
-    hints.set(hit.canonicalTerm, [hit.meaning])
-    if (hints.size >= maxHints) {
-      break
-    }
-  }
-
-  return Object.fromEntries(hints)
-}

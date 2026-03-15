@@ -1,17 +1,21 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import type { AnalysisResult } from '../src/types'
+import type { AnalysisCoreResult, AnalysisEnrichmentResult } from '../src/types'
 import { buildAnalyzeServer } from '../src/server'
 
 
-function buildExpectedResult(): AnalysisResult {
+function buildExpectedCoreResult(): AnalysisCoreResult {
   return {
     source: 'text',
     marathiText: 'submitted text',
     glossaryHits: [],
-    terminologyHints: {},
     englishCanonical: 'Submit the application',
+  }
+}
+
+function buildExpectedEnrichmentResult(): AnalysisEnrichmentResult {
+  return {
     localizedText: {
       hi: 'आवेदन जमा करें',
     },
@@ -57,7 +61,8 @@ function buildMultipartBody(parts: Array<
 
 test('buildAnalyzeServer exposes a health endpoint', async () => {
   const server = buildAnalyzeServer({
-    handleAnalyzeRequest: async () => buildExpectedResult(),
+    handleAnalyzeRequest: async () => buildExpectedCoreResult(),
+    handleEnrichRequest: async () => buildExpectedEnrichmentResult(),
   })
 
   const response = await server.inject({
@@ -72,7 +77,8 @@ test('buildAnalyzeServer exposes a health endpoint', async () => {
 
 test('buildAnalyzeServer explains how to use the analyze endpoint on GET requests', async () => {
   const server = buildAnalyzeServer({
-    handleAnalyzeRequest: async () => buildExpectedResult(),
+    handleAnalyzeRequest: async () => buildExpectedCoreResult(),
+    handleEnrichRequest: async () => buildExpectedEnrichmentResult(),
   })
 
   const response = await server.inject({
@@ -87,13 +93,32 @@ test('buildAnalyzeServer explains how to use the analyze endpoint on GET request
   await server.close()
 })
 
+test('buildAnalyzeServer explains how to use the enrich endpoint on GET requests', async () => {
+  const server = buildAnalyzeServer({
+    handleAnalyzeRequest: async () => buildExpectedCoreResult(),
+    handleEnrichRequest: async () => buildExpectedEnrichmentResult(),
+  })
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/enrich',
+  })
+
+  assert.equal(response.statusCode, 405)
+  assert.deepEqual(response.json(), {
+    detail: 'Use POST /enrich with canonical English text and requested outputs.',
+  })
+  await server.close()
+})
+
 test('buildAnalyzeServer converts multipart text requests into FormData for analysis', async () => {
   let receivedText = ''
   const server = buildAnalyzeServer({
     handleAnalyzeRequest: async (formData) => {
       receivedText = String(formData.get('marathiText') ?? '')
-      return buildExpectedResult()
+      return buildExpectedCoreResult()
     },
+    handleEnrichRequest: async () => buildExpectedEnrichmentResult(),
   })
   const multipart = buildMultipartBody([
     { name: 'marathiText', value: 'मजकूर' },
@@ -121,10 +146,11 @@ test('buildAnalyzeServer converts multipart file uploads into File objects for a
       assert.ok(file instanceof File)
       receivedFileName = file.name
       return {
-        ...buildExpectedResult(),
+        ...buildExpectedCoreResult(),
         source: 'pdf',
       }
     },
+    handleEnrichRequest: async () => buildExpectedEnrichmentResult(),
   })
   const multipart = buildMultipartBody([
     {
@@ -146,5 +172,36 @@ test('buildAnalyzeServer converts multipart file uploads into File objects for a
 
   assert.equal(response.statusCode, 200)
   assert.equal(receivedFileName, 'circular.pdf')
+  await server.close()
+})
+
+test('buildAnalyzeServer forwards enrich requests as JSON payloads', async () => {
+  let receivedBody: Record<string, unknown> | null = null
+  const server = buildAnalyzeServer({
+    handleAnalyzeRequest: async () => buildExpectedCoreResult(),
+    handleEnrichRequest: async (body) => {
+      receivedBody = body as Record<string, unknown>
+      return buildExpectedEnrichmentResult()
+    },
+  })
+
+  const response = await server.inject({
+    method: 'POST',
+    url: '/enrich',
+    payload: {
+      englishCanonical: 'Submit the application',
+      requestedLocales: ['hi'],
+      includePlainExplanation: false,
+      includeActions: true,
+    },
+  })
+
+  assert.equal(response.statusCode, 200)
+  assert.deepEqual(receivedBody, {
+    englishCanonical: 'Submit the application',
+    requestedLocales: ['hi'],
+    includePlainExplanation: false,
+    includeActions: true,
+  })
   await server.close()
 })

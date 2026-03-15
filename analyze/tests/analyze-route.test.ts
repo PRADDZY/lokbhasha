@@ -1,18 +1,22 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { GlossaryDatabaseError } from '../src/glossary'
+import { GlossaryDatabaseError } from '../src/errors'
 import * as analyzeRoute from '../src/analyze-route'
-import type { AnalysisResult } from '../src/types'
+import type { AnalysisCoreResult, AnalysisEnrichmentResult } from '../src/types'
 
 
-function buildExpectedResult(): AnalysisResult {
+function buildExpectedCoreResult(): AnalysisCoreResult {
   return {
     source: 'text',
     marathiText: 'अर्ज सादर करा',
     glossaryHits: [],
-    terminologyHints: {},
     englishCanonical: 'Submit the application',
+  }
+}
+
+function buildExpectedEnrichmentResult(): AnalysisEnrichmentResult {
+  return {
     localizedText: {
       hi: 'आवेदन जमा करें',
     },
@@ -25,7 +29,7 @@ test('handleAnalyzeFormData analyzes pasted Marathi text', async () => {
   const formData = new FormData()
   formData.set('marathiText', 'अर्ज सादर करा')
 
-  const expected = buildExpectedResult()
+  const expected = buildExpectedCoreResult()
   const result = await analyzeRoute.handleAnalyzeFormData(formData, {
     analyzeMarathiDocument: async (input) => {
       assert.equal(input.source, 'text')
@@ -45,7 +49,7 @@ test('handleAnalyzeFormData extracts pdf content before analysis', async () => {
   formData.set('file', new File(['%PDF-sample'], 'circular.pdf', { type: 'application/pdf' }))
 
   const expected = {
-    ...buildExpectedResult(),
+    ...buildExpectedCoreResult(),
     source: 'pdf' as const,
     extractionConfidence: 0.88,
     marathiText: 'सदर अर्ज',
@@ -73,7 +77,7 @@ test('handleAnalyzeFormData rejects empty requests', async () => {
   await assert.rejects(
     () =>
       analyzeRoute.handleAnalyzeFormData(formData, {
-        analyzeMarathiDocument: async () => buildExpectedResult(),
+        analyzeMarathiDocument: async () => buildExpectedCoreResult(),
         extractPdfText: async () => ({
           text: 'unused',
           confidence: 0.5,
@@ -83,9 +87,79 @@ test('handleAnalyzeFormData rejects empty requests', async () => {
   )
 })
 
+test('handleEnrichRequest returns only the requested optional outputs', async () => {
+  const expected = buildExpectedEnrichmentResult()
+
+  const result = await analyzeRoute.handleEnrichRequest(
+    {
+      englishCanonical: 'Submit the application',
+      requestedLocales: ['hi'],
+      includePlainExplanation: true,
+      includeActions: true,
+    },
+    {
+      generateAnalysisEnrichment: async (input) => {
+        assert.equal(input.englishCanonical, 'Submit the application')
+        assert.deepEqual(input.requestedLocales, ['hi'])
+        assert.equal(input.includePlainExplanation, true)
+        assert.equal(input.includeActions, true)
+        return expected
+      },
+    }
+  )
+
+  assert.deepEqual(result, expected)
+})
+
+test('handleEnrichRequest rejects requests with no optional outputs selected', async () => {
+  await assert.rejects(
+    () =>
+      analyzeRoute.handleEnrichRequest(
+        {
+          englishCanonical: 'Submit the application',
+          requestedLocales: [],
+          includePlainExplanation: false,
+          includeActions: false,
+        },
+        {
+          generateAnalysisEnrichment: async () => buildExpectedEnrichmentResult(),
+        }
+      ),
+    /Request at least one optional output before generating enrichments\./
+  )
+})
+
+test('handleEnrichRequest rejects requests without canonical english text', async () => {
+  await assert.rejects(
+    () =>
+      analyzeRoute.handleEnrichRequest(
+        {
+          englishCanonical: '   ',
+          requestedLocales: ['hi'],
+          includePlainExplanation: false,
+          includeActions: false,
+        },
+        {
+          generateAnalysisEnrichment: async () => buildExpectedEnrichmentResult(),
+        }
+      ),
+    /Provide canonical English text before generating enrichments\./
+  )
+})
+
 test('getAnalyzeErrorStatus maps request validation failures to bad request', () => {
   assert.equal(
     analyzeRoute.getAnalyzeErrorStatus(new Error('Upload a PDF or provide Marathi text before analyzing.')),
+    400
+  )
+  assert.equal(
+    analyzeRoute.getAnalyzeErrorStatus(
+      new Error('Request at least one optional output before generating enrichments.')
+    ),
+    400
+  )
+  assert.equal(
+    analyzeRoute.getAnalyzeErrorStatus(new Error('Provide canonical English text before generating enrichments.')),
     400
   )
 })
