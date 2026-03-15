@@ -99,6 +99,13 @@ If you have the source dictionary locally, build the SQLite artifact before usin
 python scripts/build_glossary_sqlite.py --source ./dict/lingo_dev_mr_en.json --output ./dict/glossary.sqlite3
 ```
 
+Then verify that the frontend runtime can actually open it:
+
+```bash
+cd frontend
+npm run verify:glossary
+```
+
 The source dictionary and the generated SQLite artifact are ignored by git. Deployments must provide the built SQLite file separately and set `GLOSSARY_DB_PATH` to its runtime location.
 
 ## Run locally
@@ -202,6 +209,8 @@ The Next.js app now owns the analysis pipeline. Any production host for the fron
 - `BACKEND_URL`
 - `GLOSSARY_DB_PATH`
 - A readable SQLite glossary artifact at the configured path
+
+Before promoting a deploy, run `npm run verify:glossary` in `frontend/` anywhere the artifact is mounted.
 
 ## CI and release workflows
 
