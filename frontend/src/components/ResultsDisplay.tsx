@@ -10,7 +10,8 @@ type ResultsDisplayProps = {
 }
 
 export function ResultsDisplay({ result }: ResultsDisplayProps) {
-  const glossaryEntries = Object.entries(result.glossary_terms ?? {})
+  const glossaryEntries = Object.entries(result.terminologyHints ?? {})
+  const localizedEntries = Object.entries(result.localizedText ?? {})
 
   return (
     <main className="min-h-screen px-4 py-8 md:px-8 md:py-10">
@@ -39,20 +40,41 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
             <article className="paper-panel rounded-[2rem] p-6 md:p-8">
               <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Original Marathi</p>
               <div className="mt-5 rounded-[1.5rem] bg-[var(--surface-strong)] p-5 text-lg leading-9 text-[var(--ink)]">
-                <TermHighlight text={result.marathi} glossaryTerms={result.glossary_terms} />
+                <TermHighlight text={result.marathiText} glossaryHits={result.glossaryHits} />
               </div>
             </article>
 
             <article className="paper-panel rounded-[2rem] p-6 md:p-8">
-              <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">English translation</p>
+              <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Canonical English</p>
               <div className="mt-5 rounded-[1.5rem] bg-[var(--surface-strong)] p-5 text-lg leading-8 text-[var(--ink)]">
-                {result.english}
+                {result.englishCanonical}
               </div>
             </article>
 
             <article className="rounded-[2rem] border border-[rgba(141,79,42,0.2)] bg-[rgba(141,79,42,0.08)] p-6 md:p-8">
               <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Plain explanation</p>
-              <div className="mt-5 text-xl leading-9 text-[var(--ink)]">{result.simplified}</div>
+              <div className="mt-5 text-xl leading-9 text-[var(--ink)]">{result.simplifiedEnglish}</div>
+            </article>
+
+            <article className="paper-panel rounded-[2rem] p-6 md:p-8">
+              <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Localized outputs</p>
+              <div className="mt-5 grid gap-4 md:grid-cols-2">
+                {localizedEntries.length ? (
+                  localizedEntries.map(([locale, localizedText]) => (
+                    <div
+                      key={locale}
+                      className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4"
+                    >
+                      <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">{locale}</p>
+                      <p className="mt-3 text-base leading-7 text-[var(--ink)]">{localizedText}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4 text-sm text-[var(--muted)]">
+                    No target locales are configured yet.
+                  </p>
+                )}
+              </div>
             </article>
           </section>
 
@@ -84,17 +106,17 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
             </article>
 
             <article className="paper-panel rounded-[2rem] p-6 md:p-8">
-              <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Highlighted terms</p>
+              <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Terminology sent to Lingo</p>
               <div className="mt-5 space-y-3">
                 {glossaryEntries.length ? (
-                  glossaryEntries.map(([marathi, english]) => (
+                  glossaryEntries.map(([marathi, englishSuggestions]) => (
                     <div
                       key={marathi}
                       className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4"
                     >
                       <p className="text-lg font-semibold text-[var(--ink)]">{marathi}</p>
                       <p className="mt-1 text-sm uppercase tracking-[0.16em] text-[var(--muted)]">
-                        {english}
+                        {englishSuggestions.join(' · ')}
                       </p>
                     </div>
                   ))

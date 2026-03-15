@@ -1,64 +1,28 @@
-import axios from 'axios'
+import type { AnalysisResult } from './server/types'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+export type { AnalysisResult }
 
-export type ActionItem = {
-  action: string
-  deadline: string | null
-  requirement: string | null
-}
-
-export type UploadResponse = {
-  text: string
-  glossary: Record<string, string>
-  confidence: number
-}
-
-export type TranslateResponse = {
-  marathi: string
-  english: string
-  simplified: string
-  actions: ActionItem[]
-  glossary_terms: Record<string, string>
-}
-
-export type AnalysisResult = TranslateResponse & {
-  source: 'pdf' | 'text'
-  extractionConfidence?: number
-}
-
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
-
-export const uploadPDF = async (file: File) => {
+export async function analyzeDocument(input: {
+  file?: File | null
+  marathiText?: string
+}): Promise<AnalysisResult> {
   const formData = new FormData()
-  formData.append('file', file)
-
-  try {
-    const response = await api.post('/upload', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
-    return response.data as UploadResponse
-  } catch (error) {
-    throw new Error(`PDF upload failed: ${error}`)
+  if (input.file) {
+    formData.append('file', input.file)
   }
-}
-
-export const translateText = async (marathiText: string) => {
-  try {
-    const response = await api.post('/translate', {
-      marathi_text: marathiText,
-    })
-    return response.data as TranslateResponse
-  } catch (error) {
-    throw new Error(`Translation failed: ${error}`)
+  if (input.marathiText?.trim()) {
+    formData.append('marathiText', input.marathiText.trim())
   }
-}
 
-export default api
+  const response = await fetch('/api/analyze', {
+    method: 'POST',
+    body: formData,
+  })
+
+  const payload = (await response.json().catch(() => null)) as AnalysisResult | { detail?: string } | null
+  if (!response.ok) {
+    throw new Error((payload as { detail?: string } | null)?.detail || 'Analysis failed.')
+  }
+
+  return payload as AnalysisResult
+}

@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { startTransition, useState } from 'react'
 
-import { AnalysisResult, translateText, uploadPDF } from '@/lib/api'
+import { AnalysisResult, analyzeDocument } from '@/lib/api'
 import { UploadForm } from '@/components/UploadForm'
 
 
@@ -16,7 +16,7 @@ export default function Home() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const analyzeDocument = async () => {
+  const runAnalysis = async () => {
     if (!selectedFile && !marathiText.trim()) {
       setError('Upload a PDF or paste Marathi text before running the analysis.')
       return
@@ -26,23 +26,10 @@ export default function Home() {
     setIsLoading(true)
 
     try {
-      let result: AnalysisResult
-
-      if (selectedFile) {
-        const uploadResult = await uploadPDF(selectedFile)
-        const translationResult = await translateText(uploadResult.text)
-        result = {
-          ...translationResult,
-          source: 'pdf',
-          extractionConfidence: uploadResult.confidence,
-        }
-      } else {
-        const translationResult = await translateText(marathiText.trim())
-        result = {
-          ...translationResult,
-          source: 'text',
-        }
-      }
+      const result: AnalysisResult = await analyzeDocument({
+        file: selectedFile,
+        marathiText,
+      })
 
       window.sessionStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(result))
       startTransition(() => router.push('/result'))
@@ -96,7 +83,7 @@ export default function Home() {
           isLoading={isLoading}
           onFileChange={setSelectedFile}
           onTextChange={setMarathiText}
-          onAnalyze={analyzeDocument}
+          onAnalyze={runAnalysis}
         />
       </div>
     </main>
