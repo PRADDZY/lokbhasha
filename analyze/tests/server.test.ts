@@ -18,6 +18,24 @@ function buildExpectedCoreResult(): AnalysisCoreResult {
     marathiText: 'submitted text',
     glossaryHits: [],
     englishCanonical: 'Submit the application',
+    localizationContext: {
+      provider: 'lingo.dev',
+      engineSelectionMode: 'implicit_default',
+      engineId: null,
+      sourceLocale: {
+        configured: 'mr',
+        recognized: 'mr',
+        matchesConfigured: true,
+      },
+      canonicalStage: {
+        requestShape: 'structured_object',
+        method: 'localizeObject',
+        sourceLocale: 'mr',
+        targetLocale: 'en',
+        fast: true,
+        glossaryMode: 'fallback_request_hints',
+      },
+    },
   }
 }
 
@@ -61,12 +79,12 @@ function buildExpectedLingoSetup(): LingoSetupSummary {
     sourceLocale: 'mr',
     canonicalTargetLocale: 'en',
     selectedTargetLocales: ['as', 'bn', 'gu', 'hi'],
-    runtimePath: ['mr->en', 'en->selectedLocales'],
+    runtimePath: ['recognize', 'mr->en', 'en->selectedLocales'],
     engine: {
       selectionMode: 'implicit_default',
       engineId: null,
       status: 'default_org_engine',
-      note: 'SDK wrapper uses the organization default engine.',
+      note: 'Requests use the organization default Lingo setup.',
     },
     layers: {
       glossary: {
@@ -125,7 +143,7 @@ function buildExpectedQualitySummary(): QualitySummary {
     },
     baselineComparison: {
       available: true,
-      method: 'same_localizeText_without_glossary_hints',
+      method: 'same_localizeObject_without_glossary_hints',
     },
   }
 }
@@ -133,7 +151,7 @@ function buildExpectedQualitySummary(): QualitySummary {
 function buildExpectedComparisonResult(): AnalysisComparisonResult {
   return {
     targetLocale: 'en',
-    method: 'same_localizeText_without_glossary_hints',
+    method: 'same_localizeObject_without_glossary_hints',
     baselineText: 'Send the application',
     sameAsCurrent: false,
     glossaryMatchCount: 2,

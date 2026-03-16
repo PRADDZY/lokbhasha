@@ -30,7 +30,7 @@ export function getQualitySummary(options?: {
     },
     baselineComparison: {
       available: true,
-      method: 'same_localizeText_without_glossary_hints',
+      method: 'same_localizeObject_without_glossary_hints',
     },
   }
 }

@@ -5,11 +5,11 @@ import { analyzeMarathiDocument, buildBaselineComparison, generateAnalysisEnrich
 import type { GlossaryHit, LingoClient } from '../src/types'
 
 
-test('analyzeMarathiDocument uses glossary hints for english translation and returns only the core result', async () => {
+test('analyzeMarathiDocument recognizes the source locale and localizes canonical english through a structured object request', async () => {
   const glossaryHits: GlossaryHit[] = [
     {
-      canonicalTerm: 'अर्ज',
-      matchedText: 'अर्ज',
+      canonicalTerm: 'arj',
+      matchedText: 'arj',
       meaning: 'application',
       start: 0,
       end: 3,
@@ -20,19 +20,25 @@ test('analyzeMarathiDocument uses glossary hints for english translation and ret
 
   const lingoCalls: Array<{ method: string; payload: unknown }> = []
   const lingoClient: LingoClient = {
-    async localizeText(text, options) {
-      lingoCalls.push({ method: 'localizeText', payload: { text, options } })
-      return 'Submit the application'
+    runtime: {
+      engineSelectionMode: 'explicit',
+      engineId: 'engine_demo_123',
     },
-    async batchLocalizeText(text, options) {
-      lingoCalls.push({ method: 'batchLocalizeText', payload: { text, options } })
-      return ['आवेदन जमा करें']
+    async recognizeLocale(text) {
+      lingoCalls.push({ method: 'recognizeLocale', payload: { text } })
+      return 'mr'
+    },
+    async localizeObject(payload, options) {
+      lingoCalls.push({ method: 'localizeObject', payload: { payload, options } })
+      return {
+        canonicalText: 'Submit the application',
+      }
     },
   }
 
   const result = await analyzeMarathiDocument(
     {
-      marathiText: 'अर्ज सादर करा',
+      marathiText: 'arj sadar kara',
       source: 'text',
       extractionConfidence: undefined,
     },
@@ -44,37 +50,71 @@ test('analyzeMarathiDocument uses glossary hints for english translation and ret
 
   assert.deepEqual(result, {
     source: 'text',
-    marathiText: 'अर्ज सादर करा',
+    marathiText: 'arj sadar kara',
     extractionConfidence: undefined,
     glossaryHits,
     englishCanonical: 'Submit the application',
-  })
-  assert.equal(lingoCalls.length, 1)
-  assert.deepEqual(lingoCalls[0], {
-    method: 'localizeText',
-    payload: {
-      text: 'अर्ज सादर करा',
-      options: {
+    localizationContext: {
+      provider: 'lingo.dev',
+      engineSelectionMode: 'explicit',
+      engineId: 'engine_demo_123',
+      sourceLocale: {
+        configured: 'mr',
+        recognized: 'mr',
+        matchesConfigured: true,
+      },
+      canonicalStage: {
+        requestShape: 'structured_object',
+        method: 'localizeObject',
         sourceLocale: 'mr',
         targetLocale: 'en',
         fast: true,
-        hints: {
-          अर्ज: ['application'],
-        },
+        glossaryMode: 'fallback_request_hints',
       },
     },
   })
+  assert.deepEqual(lingoCalls, [
+    {
+      method: 'recognizeLocale',
+      payload: {
+        text: 'arj sadar kara',
+      },
+    },
+    {
+      method: 'localizeObject',
+      payload: {
+        payload: {
+          canonicalText: 'arj sadar kara',
+        },
+        options: {
+          sourceLocale: 'mr',
+          targetLocale: 'en',
+          fast: true,
+          hints: {
+            arj: ['application'],
+          },
+        },
+      },
+    },
+  ])
 })
 
-test('generateAnalysisEnrichment localizes only requested locales', async () => {
+test('generateAnalysisEnrichment localizes only requested locales with per-locale structured object requests', async () => {
   const lingoCalls: Array<{ method: string; payload: unknown }> = []
   const lingoClient: LingoClient = {
-    async localizeText() {
-      throw new Error('core translation should not run during enrichment')
+    runtime: {
+      engineSelectionMode: 'implicit_default',
+      engineId: null,
     },
-    async batchLocalizeText(text, options) {
-      lingoCalls.push({ method: 'batchLocalizeText', payload: { text, options } })
-      return ['आवेदन जमा करें', 'আবেদন জমা দিন']
+    async recognizeLocale() {
+      throw new Error('source recognition should not run during enrichment')
+    },
+    async localizeObject(payload, options) {
+      lingoCalls.push({ method: 'localizeObject', payload: { payload, options } })
+      if (options.targetLocale === 'hi') {
+        return { localizedText: 'Hindi output' }
+      }
+      return { localizedText: 'Bangla output' }
     },
   }
 
@@ -90,18 +130,33 @@ test('generateAnalysisEnrichment localizes only requested locales', async () => 
 
   assert.deepEqual(result, {
     localizedText: {
-      hi: 'आवेदन जमा करें',
-      bn: 'আবেদন জমা দিন',
+      hi: 'Hindi output',
+      bn: 'Bangla output',
     },
   })
   assert.deepEqual(lingoCalls, [
     {
-      method: 'batchLocalizeText',
+      method: 'localizeObject',
       payload: {
-        text: 'Submit the application',
+        payload: {
+          localizedText: 'Submit the application',
+        },
         options: {
           sourceLocale: 'en',
-          targetLocales: ['hi', 'bn'],
+          targetLocale: 'hi',
+          fast: true,
+        },
+      },
+    },
+    {
+      method: 'localizeObject',
+      payload: {
+        payload: {
+          localizedText: 'Submit the application',
+        },
+        options: {
+          sourceLocale: 'en',
+          targetLocale: 'bn',
           fast: true,
         },
       },
@@ -111,10 +166,14 @@ test('generateAnalysisEnrichment localizes only requested locales', async () => 
 
 test('generateAnalysisEnrichment returns explanation and actions only when requested', async () => {
   const lingoClient: LingoClient = {
-    async localizeText() {
+    runtime: {
+      engineSelectionMode: 'implicit_default',
+      engineId: null,
+    },
+    async recognizeLocale() {
       throw new Error('core translation should not run during enrichment')
     },
-    async batchLocalizeText() {
+    async localizeObject() {
       throw new Error('locale translation should not run for explanation-only requests')
     },
   }
@@ -145,10 +204,14 @@ test('generateAnalysisEnrichment returns explanation and actions only when reque
 
 test('generateAnalysisEnrichment can derive actions without returning a plain explanation', async () => {
   const lingoClient: LingoClient = {
-    async localizeText() {
+    runtime: {
+      engineSelectionMode: 'implicit_default',
+      engineId: null,
+    },
+    async recognizeLocale() {
       throw new Error('core translation should not run during enrichment')
     },
-    async batchLocalizeText() {
+    async localizeObject() {
       throw new Error('locale translation should not run for actions-only requests')
     },
   }
@@ -173,11 +236,11 @@ test('generateAnalysisEnrichment can derive actions without returning a plain ex
   ])
 })
 
-test('buildBaselineComparison reruns localization without glossary hints and reports whether the text changed', async () => {
+test('buildBaselineComparison reruns the same structured localization request without glossary hints', async () => {
   const glossaryHits: GlossaryHit[] = [
     {
-      canonicalTerm: 'à¤…à¤°à¥à¤œ',
-      matchedText: 'à¤…à¤°à¥à¤œ',
+      canonicalTerm: 'arj',
+      matchedText: 'arj',
       meaning: 'application',
       start: 0,
       end: 3,
@@ -185,8 +248,8 @@ test('buildBaselineComparison reruns localization without glossary hints and rep
       confidence: 1,
     },
     {
-      canonicalTerm: 'à¤¸à¤¾à¤¦à¤°',
-      matchedText: 'à¤¸à¤¾à¤¦à¤°',
+      canonicalTerm: 'sadar',
+      matchedText: 'sadar',
       meaning: 'submit',
       start: 5,
       end: 9,
@@ -197,18 +260,24 @@ test('buildBaselineComparison reruns localization without glossary hints and rep
 
   const lingoCalls: Array<{ method: string; payload: unknown }> = []
   const lingoClient: LingoClient = {
-    async localizeText(text, options) {
-      lingoCalls.push({ method: 'localizeText', payload: { text, options } })
-      return 'Send the application'
+    runtime: {
+      engineSelectionMode: 'implicit_default',
+      engineId: null,
     },
-    async batchLocalizeText() {
-      throw new Error('batch localization should not run during baseline comparison')
+    async recognizeLocale() {
+      throw new Error('source recognition should not run during baseline comparison')
+    },
+    async localizeObject(payload, options) {
+      lingoCalls.push({ method: 'localizeObject', payload: { payload, options } })
+      return {
+        canonicalText: 'Send the application',
+      }
     },
   }
 
   const result = await buildBaselineComparison(
     {
-      marathiText: 'à¤…à¤°à¥à¤œ à¤¸à¤¾à¤¦à¤° à¤•à¤°à¤¾',
+      marathiText: 'arj sadar kara',
       englishCanonical: 'Submit the application',
     },
     {
@@ -219,7 +288,7 @@ test('buildBaselineComparison reruns localization without glossary hints and rep
 
   assert.deepEqual(result, {
     targetLocale: 'en',
-    method: 'same_localizeText_without_glossary_hints',
+    method: 'same_localizeObject_without_glossary_hints',
     baselineText: 'Send the application',
     sameAsCurrent: false,
     glossaryMatchCount: 2,
@@ -227,9 +296,11 @@ test('buildBaselineComparison reruns localization without glossary hints and rep
   })
   assert.deepEqual(lingoCalls, [
     {
-      method: 'localizeText',
+      method: 'localizeObject',
       payload: {
-        text: 'à¤…à¤°à¥à¤œ à¤¸à¤¾à¤¦à¤° à¤•à¤°à¤¾',
+        payload: {
+          canonicalText: 'arj sadar kara',
+        },
         options: {
           sourceLocale: 'mr',
           targetLocale: 'en',

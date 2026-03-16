@@ -47,7 +47,7 @@ test('getLingoSetupSummary reports the default setup alongside glossary-backed r
 
   assert.equal(summary.sourceLocale, 'mr')
   assert.equal(summary.canonicalTargetLocale, 'en')
-  assert.deepEqual(summary.runtimePath, ['mr->en', 'en->selectedLocales'])
+  assert.deepEqual(summary.runtimePath, ['recognize', 'mr->en', 'en->selectedLocales'])
   assert.deepEqual(summary.selectedTargetLocales, [
     'as',
     'bn',
@@ -72,6 +72,7 @@ test('getLingoSetupSummary reports the default setup alongside glossary-backed r
     'ur',
   ])
   assert.equal(summary.engine.status, 'default_org_engine')
+  assert.equal(summary.engine.note, 'Requests use the organization default Lingo setup.')
   assert.equal(summary.layers.glossary.status, 'ready')
   assert.equal(summary.layers.glossary.totalTerms, 2)
   assert.equal(summary.layers.brandVoices.configuredCount, 0)

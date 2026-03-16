@@ -1,9 +1,10 @@
-import { getConfiguredTargetLocales } from './config'
+import { getConfiguredTargetLocales, getLingoEngineId } from './config'
 import { getGlossarySyncStatus } from './glossary-sync'
 import type { LingoSetupSummary } from './types'
 
 
-const DEFAULT_ENGINE_NOTE = 'SDK wrapper uses the organization default engine.'
+const DEFAULT_ENGINE_NOTE = 'Requests use the organization default Lingo setup.'
+const CONFIGURED_ENGINE_NOTE = 'Requests use the configured Lingo setup id.'
 
 export function getLingoSetupSummary(options?: {
   databasePath?: string
@@ -13,17 +14,18 @@ export function getLingoSetupSummary(options?: {
     databasePath: options?.databasePath,
     snapshotPath: options?.snapshotPath,
   })
+  const engineId = getLingoEngineId()
 
   return {
     sourceLocale: 'mr',
     canonicalTargetLocale: 'en',
     selectedTargetLocales: getConfiguredTargetLocales(),
-    runtimePath: ['mr->en', 'en->selectedLocales'],
+    runtimePath: ['recognize', 'mr->en', 'en->selectedLocales'],
     engine: {
-      selectionMode: 'implicit_default',
-      engineId: null,
-      status: 'default_org_engine',
-      note: DEFAULT_ENGINE_NOTE,
+      selectionMode: engineId ? 'explicit' : 'implicit_default',
+      engineId,
+      status: engineId ? 'configured_engine' : 'default_org_engine',
+      note: engineId ? CONFIGURED_ENGINE_NOTE : DEFAULT_ENGINE_NOTE,
     },
     layers: {
       glossary: {

@@ -21,13 +21,31 @@ import type {
 function buildExpectedCoreResult(): AnalysisCoreResult {
   return {
     source: 'text',
-    marathiText: 'अर्ज सादर करा',
+    marathiText: 'arj sadar kara',
     glossaryHits: [],
     englishCanonical: 'Submit the application',
+    localizationContext: {
+      provider: 'lingo.dev',
+      engineSelectionMode: 'implicit_default',
+      engineId: null,
+      sourceLocale: {
+        configured: 'mr',
+        recognized: 'mr',
+        matchesConfigured: true,
+      },
+      canonicalStage: {
+        requestShape: 'structured_object',
+        method: 'localizeObject',
+        sourceLocale: 'mr',
+        targetLocale: 'en',
+        fast: true,
+        glossaryMode: 'fallback_request_hints',
+      },
+    },
   }
 }
 
-test('analyzeDocument posts to NEXT_PUBLIC_API_BASE_URL/analyze and expects the core result only', async () => {
+test('analyzeDocument posts to NEXT_PUBLIC_API_BASE_URL/analyze and expects source-recognition and canonical-stage metadata', async () => {
   const originalBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
   const originalFetch = globalThis.fetch
   const expected = buildExpectedCoreResult()
@@ -43,7 +61,7 @@ test('analyzeDocument posts to NEXT_PUBLIC_API_BASE_URL/analyze and expects the 
   }
 
   try {
-    const result = await analyzeDocument({ marathiText: 'अर्ज सादर करा' })
+    const result = await analyzeDocument({ marathiText: 'arj sadar kara' })
     assert.equal(requestedUrl, 'https://lokbhasha-analyze.onrender.com/analyze')
     assert.deepEqual(result, expected)
   } finally {
@@ -61,8 +79,8 @@ test('enrichDocument posts JSON to NEXT_PUBLIC_API_BASE_URL/enrich and returns o
   const originalFetch = globalThis.fetch
   const expected: AnalysisEnrichmentResult = {
     localizedText: {
-      hi: 'आवेदन जमा करें',
-      bn: 'আবেদন জমা দিন',
+      hi: 'Hindi output',
+      bn: 'Bangla output',
     },
   }
   const requests: Array<{ url: string; method: string; contentType: string | null; body: string }> = []
@@ -131,7 +149,7 @@ test('fetchGlossaryStatus reads glossary sync metadata from NEXT_PUBLIC_API_BASE
       {
         sourceLocale: 'mr',
         targetLocale: 'en',
-        sourceText: 'अर्ज',
+        sourceText: 'arj',
         targetText: 'application',
         type: 'custom_translation',
         hint: null,
@@ -187,7 +205,7 @@ function buildExpectedQualitySummary(): QualitySummary {
     },
     baselineComparison: {
       available: true,
-      method: 'same_localizeText_without_glossary_hints',
+      method: 'same_localizeObject_without_glossary_hints',
     },
   }
 }
@@ -195,7 +213,7 @@ function buildExpectedQualitySummary(): QualitySummary {
 function buildExpectedComparisonResult(): AnalysisComparisonResult {
   return {
     targetLocale: 'en',
-    method: 'same_localizeText_without_glossary_hints',
+    method: 'same_localizeObject_without_glossary_hints',
     baselineText: 'Send the application',
     sameAsCurrent: false,
     glossaryMatchCount: 2,
@@ -254,7 +272,7 @@ test('runBaselineComparison posts Marathi text and canonical English to NEXT_PUB
 
   try {
     const result = await runBaselineComparison({
-      marathiText: 'अर्ज सादर करा',
+      marathiText: 'arj sadar kara',
       englishCanonical: 'Submit the application',
     })
 
@@ -264,7 +282,7 @@ test('runBaselineComparison posts Marathi text and canonical English to NEXT_PUB
         method: 'POST',
         contentType: 'application/json',
         body: JSON.stringify({
-          marathiText: 'अर्ज सादर करा',
+          marathiText: 'arj sadar kara',
           englishCanonical: 'Submit the application',
         }),
       },
