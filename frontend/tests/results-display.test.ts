@@ -12,6 +12,11 @@ test('ResultsDisplay is built around side-by-side original and canonical panes w
 
   assert.match(source, /Original Marathi/)
   assert.match(source, /Canonical English/)
+  assert.match(source, /Localization context/)
+  assert.match(source, /Lingo\.dev localization/)
+  assert.match(source, /Source locale/)
+  assert.match(source, /Canonical locale/)
+  assert.match(source, /Glossary matches/)
   assert.match(source, /Select Indian languages/)
   assert.match(source, /Generate translation/)
   assert.match(source, /Generate plain explanation/)
@@ -39,4 +44,7 @@ test('Home page copy no longer promises simplification and key actions as defaul
   const source = await readFile(homePagePath, 'utf8')
 
   assert.doesNotMatch(source, /Translation, simplification, and key actions/)
+  assert.match(source, /Lingo\.dev/i)
+  assert.match(source, /canonical English/i)
+  assert.match(source, /selected Indian languages/i)
 })

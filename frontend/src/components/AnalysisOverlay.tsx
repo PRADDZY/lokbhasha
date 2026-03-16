@@ -20,11 +20,11 @@ export function AnalysisOverlay({ isPdfUpload }: AnalysisOverlayProps) {
         <h3 className="section-title mt-3 text-4xl text-[var(--ink)]">Analyzing circular</h3>
         <p className="mt-4 text-base leading-7 text-[var(--muted)]">
           {isPdfUpload
-            ? 'Extracting Marathi text from PDF pages before translation.'
-            : 'Preparing Marathi text for glossary matching and translation.'}
+            ? 'Extracting Marathi text from PDF pages before the Lingo localization pass.'
+            : 'Preparing Marathi text for glossary matching before the Lingo localization pass.'}
         </p>
         <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
-          Matching glossary terms and sending the document through translation.
+          Matching glossary terms before the Lingo localization pass.
         </p>
 
         <div className="mt-8 grid gap-3 text-left sm:grid-cols-3">
