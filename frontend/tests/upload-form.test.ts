@@ -9,15 +9,19 @@ const currentFilePath = fileURLToPath(import.meta.url)
 const currentDirPath = path.dirname(currentFilePath)
 const uploadFormPath = path.resolve(currentDirPath, '../src/components/UploadForm.tsx')
 const analysisOverlayPath = path.resolve(currentDirPath, '../src/components/AnalysisOverlay.tsx')
+const homePagePath = path.resolve(currentDirPath, '../src/app/page.tsx')
 
-test('UploadForm shows a full-screen analysis overlay for PDF processing', () => {
+test('Home page owns the shared analysis overlay while UploadForm stays focused on inputs', () => {
   const uploadFormSource = readFileSync(uploadFormPath, 'utf8')
   const overlaySource = readFileSync(analysisOverlayPath, 'utf8')
+  const homePageSource = readFileSync(homePagePath, 'utf8')
 
-  assert.match(uploadFormSource, /AnalysisOverlay/)
-  assert.match(uploadFormSource, /Lingo/i)
+  assert.doesNotMatch(uploadFormSource, /AnalysisOverlay/)
+  assert.match(homePageSource, /AnalysisOverlay/)
+  assert.match(homePageSource, /isPdfUpload/)
   assert.match(overlaySource, /Analyzing circular/i)
   assert.match(overlaySource, /Extracting Marathi text from PDF pages/i)
+  assert.match(overlaySource, /Preparing Marathi text for glossary matching/i)
   assert.match(overlaySource, /Matching glossary terms before the Lingo localization pass/i)
   assert.match(overlaySource, /fixed\s+inset-0/)
 })
