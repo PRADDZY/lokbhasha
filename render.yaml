@@ -18,6 +18,8 @@ services:
         value: /app/sqlite/glossary.sqlite3
       - key: LINGODOTDEV_TARGET_LOCALES
         value: as,bn,brx,doi,gu,hi,kn,ks,kok,mai,ml,mni,ne,or,pa,sa,sat,sd,ta,te,ur
+      - key: LINGODOTDEV_ENGINE_ID
+        sync: false
       - key: LINGODOTDEV_API_KEY
         sync: false
 
