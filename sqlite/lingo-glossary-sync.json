@@ -1,13 +1,24 @@
 {
-  "version": 1,
-  "source": "sqlite",
+  "version": 2,
+  "source": "government_19k",
+  "sourcePath": "C:\\Users\\Pratik Daithankar\\Desktop\\LokBhasha\\.worktrees\\glossary-mcp-align\\dict\\19k.json",
+  "sourceFormat": "english_to_marathi_list",
   "sourceLocale": "mr",
   "targetLocale": "en",
-  "sourceHash": "46b3389f063b6bce4e2afbd5b696bce7fa2dca78df2c16250a9ff149bdc35fd6",
-  "totalTerms": 249048,
-  "customTranslationTerms": 249030,
-  "nonTranslatableTerms": 18,
-  "preparedAt": "2026-03-16T09:34:21.508Z",
+  "authority": "lingo_mcp",
+  "detectionStore": "sqlite",
+  "managementMode": "mcp_only",
+  "sourceHash": "ddc929ba813c1ae99784a5678c8adc486378fd60c45a6a54ab11ed20c46246da",
+  "packageHash": "a6149b136e68defba5feb2f7bef24dceca0c7d15105a9b0a69c30c013c40907c",
+  "runtimeArtifactPath": "C:\\Users\\Pratik Daithankar\\Desktop\\LokBhasha\\.worktrees\\glossary-mcp-align\\sqlite\\glossary.sqlite3",
+  "totalTerms": 19419,
+  "customTranslationTerms": 19419,
+  "nonTranslatableTerms": 0,
+  "preparedAt": "2026-03-16T20:35:55.340Z",
+  "lastKnownMcpSyncAt": "2026-03-17T00:00:00.000Z",
+  "engineId": "eng_6reNrearwZdBhmUV",
+  "engineName": "LokBhasha",
+  "remoteGlossaryTermCount": 249048,
   "previewEntries": [
     {
       "sourceLocale": "mr",
@@ -20,32 +31,32 @@
     {
       "sourceLocale": "mr",
       "targetLocale": "en",
-      "sourceText": "\" ऐवज पावला \"",
-      "targetText": "value received",
+      "sourceText": "- आत",
+      "targetText": "among, during , within",
       "type": "custom_translation",
       "hint": null
     },
     {
       "sourceLocale": "mr",
       "targetLocale": "en",
-      "sourceText": "\"sans recourse\"",
-      "targetText": "\"without recourse\"",
+      "sourceText": "- लगत",
+      "targetText": "on",
       "type": "custom_translation",
       "hint": null
     },
     {
       "sourceLocale": "mr",
       "targetLocale": "en",
-      "sourceText": "\"एक्स\" वर्धन द्रव्य",
-      "targetText": "x' (growth) facto",
+      "sourceText": "-अतीत",
+      "targetText": "super-, ultra -",
       "type": "custom_translation",
       "hint": null
     },
     {
       "sourceLocale": "mr",
       "targetLocale": "en",
-      "sourceText": "\"ओ\" प्रतिजन",
-      "targetText": "ohne agglutinin",
+      "sourceText": "-अधीन दावा सागणे",
+      "targetText": "claim under",
       "type": "custom_translation",
       "hint": null
     }

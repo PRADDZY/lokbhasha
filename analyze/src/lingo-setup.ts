@@ -4,14 +4,16 @@ import type { LingoSetupSummary } from './types'
 
 
 const DEFAULT_ENGINE_NOTE = 'Requests use the organization default Lingo setup.'
-const CONFIGURED_ENGINE_NOTE = 'Requests use the configured Lingo setup id.'
+const CONFIGURED_ENGINE_NOTE = 'Requests use the configured Lingo engine id.'
 
 export function getLingoSetupSummary(options?: {
   databasePath?: string
+  sourcePath?: string
   snapshotPath?: string
 }): LingoSetupSummary {
   const glossaryStatus = getGlossarySyncStatus({
     databasePath: options?.databasePath,
+    sourcePath: options?.sourcePath,
     snapshotPath: options?.snapshotPath,
   })
   const engineId = getLingoEngineId()
@@ -31,14 +33,24 @@ export function getLingoSetupSummary(options?: {
       glossary: {
         status: glossaryStatus.syncState,
         source: glossaryStatus.source,
+        sourcePath: glossaryStatus.sourcePath,
+        sourceFormat: glossaryStatus.sourceFormat,
         sourceLocale: glossaryStatus.sourceLocale,
         targetLocale: glossaryStatus.targetLocale,
-        precedence: 'highest',
+        authority: glossaryStatus.authority,
+        detectionStore: glossaryStatus.detectionStore,
+        managementMode: glossaryStatus.managementMode,
+        precedence: 'authoritative_in_lingo',
         totalTerms: glossaryStatus.totalTerms,
         customTranslationTerms: glossaryStatus.customTranslationTerms,
         nonTranslatableTerms: glossaryStatus.nonTranslatableTerms,
         packageHash: glossaryStatus.packageHash,
+        runtimeArtifactPath: glossaryStatus.runtimeArtifactPath,
+        lastPreparedAt: glossaryStatus.lastPreparedAt,
         lastSyncedAt: glossaryStatus.lastSyncedAt,
+        authoritativeEngineId: glossaryStatus.authoritativeEngineId,
+        authoritativeEngineName: glossaryStatus.authoritativeEngineName,
+        remoteGlossaryTermCount: glossaryStatus.remoteGlossaryTermCount,
         fallbackMode: glossaryStatus.fallbackMode,
       },
       brandVoices: {

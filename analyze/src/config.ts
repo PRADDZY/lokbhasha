@@ -69,6 +69,10 @@ export function getGlossaryDatabasePath(): string {
   return process.env.GLOSSARY_DB_PATH || path.resolve(process.cwd(), '..', 'sqlite', 'glossary.sqlite3')
 }
 
+export function getGlossarySourcePath(): string {
+  return process.env.GLOSSARY_SOURCE_PATH || path.resolve(process.cwd(), '..', 'dict', '19k.json')
+}
+
 export function getGlossarySyncSnapshotPath(): string {
   return process.env.GLOSSARY_SYNC_SNAPSHOT_PATH || path.resolve(process.cwd(), '..', 'sqlite', 'lingo-glossary-sync.json')
 }

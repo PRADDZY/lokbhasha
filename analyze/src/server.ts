@@ -12,7 +12,13 @@ import {
   handleBaselineCompareRequest,
   handleEnrichRequest,
 } from './analyze-route'
-import { getAllowedOrigins, getAnalyzePort, getGlossaryDatabasePath, getGlossarySyncSnapshotPath } from './config'
+import {
+  getAllowedOrigins,
+  getAnalyzePort,
+  getGlossaryDatabasePath,
+  getGlossarySourcePath,
+  getGlossarySyncSnapshotPath,
+} from './config'
 import { extractPdfText } from './extraction'
 import { detectGlossaryHits } from './glossary'
 import { getGlossarySyncStatus } from './glossary-sync'
@@ -139,6 +145,7 @@ export function createBaselineCompareRequestHandler(): BaselineCompareRequestHan
 export function createGlossaryStatusRequestHandler(): GlossaryStatusRequestHandler {
   return () => getGlossarySyncStatus({
     databasePath: getGlossaryDatabasePath(),
+    sourcePath: getGlossarySourcePath(),
   })
 }
 
@@ -146,6 +153,7 @@ export function createLingoSetupRequestHandler(): LingoSetupRequestHandler {
   return () =>
     getLingoSetupSummary({
       databasePath: getGlossaryDatabasePath(),
+      sourcePath: getGlossarySourcePath(),
     })
 }
 

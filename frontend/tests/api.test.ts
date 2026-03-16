@@ -135,15 +135,25 @@ test('fetchGlossaryStatus reads glossary sync metadata from NEXT_PUBLIC_API_BASE
   const originalBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
   const originalFetch = globalThis.fetch
   const expected: GlossarySyncStatus = {
-    source: 'sqlite',
+    source: 'government_19k',
+    sourcePath: '/app/dict/19k.json',
+    sourceFormat: 'english_to_marathi_list',
     sourceLocale: 'mr',
     targetLocale: 'en',
+    authority: 'lingo_mcp',
+    detectionStore: 'sqlite',
+    managementMode: 'mcp_only',
     syncState: 'ready',
     totalTerms: 249048,
     customTranslationTerms: 249040,
     nonTranslatableTerms: 8,
     packageHash: 'abc123',
-    lastSyncedAt: '2026-03-16T12:00:00.000Z',
+    runtimeArtifactPath: '/app/sqlite/glossary.sqlite3',
+    lastPreparedAt: '2026-03-16T12:00:00.000Z',
+    lastSyncedAt: '2026-03-16T12:10:00.000Z',
+    authoritativeEngineId: 'eng_lokbhasha',
+    authoritativeEngineName: 'LokBhasha',
+    remoteGlossaryTermCount: 249048,
     fallbackMode: 'compact_request_hints',
     previewEntries: [
       {

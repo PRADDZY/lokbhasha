@@ -22,17 +22,32 @@ export type LingoGlossaryEntry = {
 }
 
 export type GlossarySyncState = 'ready' | 'drift' | 'missing'
+export type GlossaryAuthority = 'lingo_mcp'
+export type GlossaryDetectionStore = 'sqlite'
+export type GlossaryManagementMode = 'mcp_only'
+export type GlossarySourceKind = 'government_19k'
+export type GlossarySourceFormat = 'english_to_marathi_list' | 'marathi_to_english_map'
 
 export type GlossarySyncStatus = {
-  source: 'sqlite'
+  source: GlossarySourceKind
+  sourcePath: string
+  sourceFormat: GlossarySourceFormat
   sourceLocale: string
   targetLocale: string
+  authority: GlossaryAuthority
+  detectionStore: GlossaryDetectionStore
+  managementMode: GlossaryManagementMode
   syncState: GlossarySyncState
   totalTerms: number
   customTranslationTerms: number
   nonTranslatableTerms: number
   packageHash: string
+  runtimeArtifactPath: string
+  lastPreparedAt: string | null
   lastSyncedAt: string | null
+  authoritativeEngineId: string | null
+  authoritativeEngineName: string | null
+  remoteGlossaryTermCount: number | null
   fallbackMode: 'compact_request_hints'
   previewEntries: LingoGlossaryEntry[]
 }
@@ -74,15 +89,25 @@ export type LingoSetupSummary = {
   layers: {
     glossary: {
       status: GlossarySyncState
-      source: 'sqlite'
+      source: GlossarySourceKind
+      sourcePath: string
+      sourceFormat: GlossarySourceFormat
       sourceLocale: string
       targetLocale: string
-      precedence: 'highest'
+      authority: GlossaryAuthority
+      detectionStore: GlossaryDetectionStore
+      managementMode: GlossaryManagementMode
+      precedence: 'authoritative_in_lingo'
       totalTerms: number
       customTranslationTerms: number
       nonTranslatableTerms: number
       packageHash: string
+      runtimeArtifactPath: string
+      lastPreparedAt: string | null
       lastSyncedAt: string | null
+      authoritativeEngineId: string | null
+      authoritativeEngineName: string | null
+      remoteGlossaryTermCount: number | null
       fallbackMode: 'compact_request_hints'
     }
     brandVoices: {

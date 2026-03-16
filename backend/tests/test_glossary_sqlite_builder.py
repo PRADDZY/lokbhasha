@@ -33,6 +33,11 @@ SAMPLE_DICTIONARY = {
     },
 }
 
+SAMPLE_ENGLISH_TO_MARATHI_LIST = [
+    {"word": "Application", "meaning": TERM_APPLICATION},
+    {"word": "Medical history", "meaning": TERM_MEDICAL_HISTORY},
+]
+
 
 class GlossarySqliteBuilderTests(unittest.TestCase):
     def test_builder_creates_indexed_sqlite_glossary(self):
@@ -112,6 +117,43 @@ class GlossarySqliteBuilderTests(unittest.TestCase):
 
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertTrue(output_path.exists())
+
+    def test_builder_accepts_english_to_marathi_list_sources(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            source_path = Path(temp_dir) / "dictionary.json"
+            output_path = Path(temp_dir) / "glossary.sqlite3"
+            source_path.write_text(
+                json.dumps(SAMPLE_ENGLISH_TO_MARATHI_LIST, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+            stats = build_glossary_sqlite(
+                source_path=source_path,
+                output_path=output_path,
+                realtime_token_limit=3,
+            )
+
+            self.assertEqual(stats["total_terms"], 2)
+
+            connection = sqlite3.connect(output_path)
+            try:
+                terms = connection.execute(
+                    """
+                    SELECT marathi, english
+                    FROM glossary
+                    ORDER BY marathi
+                    """
+                ).fetchall()
+            finally:
+                connection.close()
+
+            self.assertEqual(
+                terms,
+                [
+                    (TERM_APPLICATION, "application"),
+                    (TERM_MEDICAL_HISTORY, "medical history"),
+                ],
+            )
 
 
 if __name__ == "__main__":
