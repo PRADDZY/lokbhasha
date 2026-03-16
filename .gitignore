@@ -41,6 +41,8 @@ venv.bak/
 .env
 .env.local
 .env.*.local
+.mcp.json
+opencode.json
 
 # Node / Frontend
 node_modules/

@@ -9,6 +9,7 @@ RUN npm ci
 
 WORKDIR /app
 COPY --chown=node:node analyze ./analyze
+COPY --chown=node:node dict ./dict
 COPY --chown=node:node sqlite ./sqlite
 
 ENV NODE_ENV=production
