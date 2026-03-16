@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from dataclasses import asdict, dataclass
 import json
 import logging
 from pathlib import Path
@@ -14,6 +15,13 @@ LOGGER = logging.getLogger(__name__)
 
 DEFAULT_SOURCE_PATH = ROOT_DIR / "sqlite" / "lingo_dev_mr_en.json"
 DEFAULT_OUTPUT_PATH = ROOT_DIR / "sqlite" / "glossary.sqlite3"
+
+
+@dataclass(frozen=True)
+class GlossaryBuildStats:
+    total_terms: int
+    output_path: str
+    realtime_token_limit: int
 
 
 def normalize_term(term: str) -> str:
@@ -42,6 +50,30 @@ def _initialize_schema(connection: sqlite3.Connection) -> None:
     connection.execute("CREATE INDEX idx_marathi ON glossary(marathi)")
 
 
+def _dictionary_text(value: object) -> str:
+    return value if isinstance(value, str) else ""
+
+
+def _dictionary_entry_values(entry_key: str, payload: object) -> tuple[str, str] | None:
+    if not isinstance(payload, dict):
+        return None
+
+    marathi_source = entry_key
+    if "mr" in payload:
+        marathi_source = _dictionary_text(payload["mr"]) or entry_key
+
+    english_source = ""
+    if "en" in payload:
+        english_source = _dictionary_text(payload["en"])
+
+    normalized_term = normalize_term(marathi_source)
+    english_term = extract_primary_meaning(english_source)
+    if not normalized_term or not english_term:
+        return None
+
+    return normalized_term, english_term
+
+
 def build_glossary_sqlite(
     source_path: Path = DEFAULT_SOURCE_PATH,
     output_path: Path = DEFAULT_OUTPUT_PATH,
@@ -60,15 +92,11 @@ def build_glossary_sqlite(
 
         inserted = 0
         for marathi_term, payload in raw_dictionary.items():
-            if not isinstance(payload, dict):
+            entry_values = _dictionary_entry_values(marathi_term, payload)
+            if entry_values is None:
                 continue
 
-            marathi_value = payload.get("mr")
-            english_value = payload.get("en", "")
-            normalized_term = normalize_term(marathi_value if isinstance(marathi_value, str) else marathi_term)
-            english_term = extract_primary_meaning(english_value if isinstance(english_value, str) else "")
-            if not normalized_term or not english_term:
-                continue
+            normalized_term, english_term = entry_values
 
             connection.execute(
                 """
@@ -86,11 +114,12 @@ def build_glossary_sqlite(
     finally:
         connection.close()
 
-    return {
-        "total_terms": inserted,
-        "output_path": str(output_path),
-        "realtime_token_limit": realtime_token_limit,
-    }
+    stats = GlossaryBuildStats(
+        total_terms=inserted,
+        output_path=str(output_path),
+        realtime_token_limit=realtime_token_limit,
+    )
+    return asdict(stats)
 
 
 def main() -> None:
@@ -106,7 +135,9 @@ def main() -> None:
         output_path=args.output,
         realtime_token_limit=args.realtime_token_limit,
     )
-    LOGGER.info("Built glossary SQLite at %s with %s terms.", stats["output_path"], stats["total_terms"])
+    output_location = stats["output_path"]
+    total_terms = stats["total_terms"]
+    LOGGER.info("Built glossary SQLite at %s with %s terms.", output_location, total_terms)
     json.dump(stats, sys.stdout, ensure_ascii=False)
     sys.stdout.write("\n")
 

@@ -87,6 +87,34 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
   const localizedEntries = INDIAN_LANGUAGE_OPTIONS
     .filter((option) => loadedLocales[option.value])
     .map((option) => [option.label, loadedLocales[option.value] as string] as const)
+  const sourceLabel = sessionResult.source === 'pdf' ? 'PDF upload' : 'Pasted Marathi text'
+  const extractionConfidenceLabel =
+    sessionResult.extractionConfidence === undefined
+      ? ''
+      : ` - extraction confidence ${Math.round(sessionResult.extractionConfidence * 100)}%`
+  const selectedLanguageLabel =
+    selectedLocales.length > 0
+      ? `${selectedLocales.length} language${selectedLocales.length === 1 ? '' : 's'} selected`
+      : 'Open language menu'
+  const translationDisabled = pendingLocales.length === 0 || loadingMode !== null
+  const translationButtonLabel =
+    loadingMode === 'translation' ? 'Generating translation...' : 'Generate translation'
+  const explanationReady = Boolean(sessionResult.simplifiedEnglish)
+  const explanationDisabled = explanationReady || loadingMode !== null
+  const explanationButtonLabel =
+    loadingMode === 'explanation'
+      ? 'Generating explanation...'
+      : explanationReady
+        ? 'Plain explanation ready'
+        : 'Generate plain explanation'
+  const actionsReady = Boolean(sessionResult.actions)
+  const actionsDisabled = actionsReady || loadingMode !== null
+  const actionsButtonLabel =
+    loadingMode === 'actions'
+      ? 'Generating actions...'
+      : actionsReady
+        ? 'Key actions ready'
+        : 'Generate key actions'
 
   function persistResult(nextResult: AnalysisSessionResult) {
     setSessionResult(nextResult)
@@ -159,10 +187,8 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted)]">Analysis result</p>
             <h1 className="section-title mt-3 text-4xl md:text-6xl">Original and canonical view</h1>
             <p className="mt-4 max-w-2xl text-lg leading-8 text-[var(--muted)]">
-              Source: {sessionResult.source === 'pdf' ? 'PDF upload' : 'Pasted Marathi text'}
-              {sessionResult.extractionConfidence !== undefined
-                ? ` · extraction confidence ${Math.round(sessionResult.extractionConfidence * 100)}%`
-                : ''}
+              Source: {sourceLabel}
+              {extractionConfidenceLabel}
             </p>
           </div>
           <Link
@@ -198,9 +224,7 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
                 </label>
                 <details className="mt-4 rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)]">
                   <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-[var(--ink)]">
-                    {selectedLocales.length
-                      ? `${selectedLocales.length} language${selectedLocales.length === 1 ? '' : 's'} selected`
-                      : 'Open language menu'}
+                    {selectedLanguageLabel}
                   </summary>
                   <div className="grid max-h-72 gap-2 overflow-y-auto border-t border-[var(--line)] px-4 py-4 md:grid-cols-2">
                     {INDIAN_LANGUAGE_OPTIONS.map((option) => (
@@ -224,10 +248,10 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
                 <button
                   type="button"
                   onClick={requestTranslations}
-                  disabled={!pendingLocales.length || loadingMode !== null}
+                  disabled={translationDisabled}
                   className="mt-4 w-full rounded-full bg-[var(--ink)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-white transition disabled:cursor-not-allowed disabled:opacity-55"
                 >
-                  {loadingMode === 'translation' ? 'Generating translation...' : 'Generate translation'}
+                  {translationButtonLabel}
                 </button>
               </div>
 
@@ -239,14 +263,10 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
                 <button
                   type="button"
                   onClick={requestPlainExplanation}
-                  disabled={Boolean(sessionResult.simplifiedEnglish) || loadingMode !== null}
+                  disabled={explanationDisabled}
                   className="mt-6 w-full rounded-full border border-[var(--line)] bg-[var(--surface)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--ink)] transition disabled:cursor-not-allowed disabled:opacity-55"
                 >
-                  {loadingMode === 'explanation'
-                    ? 'Generating explanation...'
-                    : sessionResult.simplifiedEnglish
-                      ? 'Plain explanation ready'
-                      : 'Generate plain explanation'}
+                  {explanationButtonLabel}
                 </button>
               </div>
 
@@ -258,14 +278,10 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
                 <button
                   type="button"
                   onClick={requestActions}
-                  disabled={Boolean(sessionResult.actions) || loadingMode !== null}
+                  disabled={actionsDisabled}
                   className="mt-6 w-full rounded-full border border-[var(--line)] bg-[var(--surface)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--ink)] transition disabled:cursor-not-allowed disabled:opacity-55"
                 >
-                  {loadingMode === 'actions'
-                    ? 'Generating actions...'
-                    : sessionResult.actions
-                      ? 'Key actions ready'
-                      : 'Generate key actions'}
+                  {actionsButtonLabel}
                 </button>
               </div>
             </div>

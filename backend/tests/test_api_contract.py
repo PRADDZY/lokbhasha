@@ -11,7 +11,7 @@ if str(BACKEND_DIR) not in sys.path:
 
 from fastapi.testclient import TestClient
 
-from main import RATE_LIMIT_STATE, _extract_pdf_text_safe, app
+from main import RATE_LIMIT_STATE, _extract_pdf_text_safe, _normalized_upload_filename, app
 
 
 class APIContractTests(unittest.TestCase):
@@ -94,6 +94,18 @@ class APIContractTests(unittest.TestCase):
             "geolocation=(), microphone=(), camera=()",
         )
 
+    def test_health_endpoint_adds_hsts_for_forwarded_https(self):
+        response = self.client.get("/health", headers={"x-forwarded-proto": "https"})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers.get("strict-transport-security"),
+            "max-age=31536000; includeSubDomains",
+        )
+
+    def test_upload_filename_normalization_discards_path_segments(self):
+        self.assertEqual(_normalized_upload_filename(r"..\nested\circular.pdf"), "circular.pdf")
+        self.assertEqual(_normalized_upload_filename("/tmp/circular.pdf"), "circular.pdf")
+
     def test_extract_preflight_response_is_restricted(self):
         response = self.client.options(
             "/extract",
@@ -130,7 +142,7 @@ class APIContractTests(unittest.TestCase):
             temp_path = Path(temp_dir) / "outside.pdf"
             temp_path.write_bytes(b"%PDF-sample")
             with self.assertRaises(RuntimeError) as error:
-                _extract_pdf_text_safe(str(temp_path))
+                _extract_pdf_text_safe(temp_path)
 
         self.assertIn("managed upload directory", str(error.exception))
 

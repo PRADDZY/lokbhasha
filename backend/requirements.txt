@@ -2,7 +2,7 @@ fastapi==0.115.14
 uvicorn[standard]==0.24.0
 pymupdf==1.26.4
 pytesseract==0.3.10
-python-multipart==0.0.6
+python-multipart==0.0.22
 rapidfuzz==3.6.0
 python-dotenv==1.0.0
 aiofiles==23.2.1

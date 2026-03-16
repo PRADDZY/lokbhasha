@@ -27,6 +27,8 @@ DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024
 DEFAULT_RATE_LIMIT_REQUESTS = 0
 DEFAULT_RATE_LIMIT_WINDOW_SECONDS = 60
 PDF_SIGNATURE = b"%PDF-"
+PDF_EXTENSION = ".pdf"
+STRICT_TRANSPORT_SECURITY_VALUE = "max-age=31536000; includeSubDomains"
 ALLOWED_PDF_CONTENT_TYPES = {
     "application/pdf",
     "application/x-pdf",
@@ -44,6 +46,7 @@ SECURITY_HEADERS = {
     "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
     "Cache-Control": "no-store",
 }
+SECURITY_HEADER_ITEMS = tuple(SECURITY_HEADERS.items())
 
 UPLOADS_DIR = Path(__file__).resolve().parents[1] / "uploads"
 UPLOADS_DIR.mkdir(exist_ok=True)
@@ -100,36 +103,61 @@ def _normalized_upload_filename(filename: str | None) -> str:
     if not filename:
         return ""
 
-    normalized = filename.replace("\\", "/")
-    return normalized.rsplit("/", maxsplit=1)[-1]
+    path_segments = [segment for segment in filename.replace("\\", "/").split("/") if segment]
+    return path_segments[-1] if path_segments else ""
 
 
-def _validate_upload_path(pdf_path: str | Path) -> Path:
-    candidate = Path(pdf_path).resolve(strict=True)
-    if candidate.parent != UPLOADS_ROOT or candidate.suffix.lower() != ".pdf":
+def _request_uses_https(request: Request | None) -> bool:
+    if request is None:
+        return False
+
+    if request.url.scheme == "https":
+        return True
+
+    forwarded_proto = request.headers.get("x-forwarded-proto", "")
+    forwarded_scheme = forwarded_proto.split(",", maxsplit=1)[0].strip().lower()
+    return forwarded_scheme == "https"
+
+
+def _response_security_headers(request: Request | None) -> dict[str, str]:
+    header_map = dict(SECURITY_HEADER_ITEMS)
+    if _request_uses_https(request):
+        header_map["Strict-Transport-Security"] = STRICT_TRANSPORT_SECURITY_VALUE
+
+    return header_map
+
+
+def _validate_managed_upload_path(pdf_path: Path) -> Path:
+    candidate = pdf_path.resolve(strict=True)
+    try:
+        candidate.relative_to(UPLOADS_ROOT)
+    except ValueError as error:
+        raise RuntimeError("PDF extraction only supports files from the managed upload directory.") from error
+
+    if not candidate.is_file() or candidate.suffix.lower() != PDF_EXTENSION:
         raise RuntimeError("PDF extraction only supports files from the managed upload directory.")
 
     return candidate
 
 
 def _apply_security_headers(response: Response, request: Request | None = None) -> Response:
-    for header, value in SECURITY_HEADERS.items():
-        response.headers[header] = value
-
-    forwarded_proto = request.headers.get("x-forwarded-proto", "") if request else ""
-    if request and (request.url.scheme == "https" or forwarded_proto.lower() == "https"):
-        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
-
+    response.headers.update(_response_security_headers(request))
     return response
 
 
-def _validate_pdf_upload(file: UploadFile, file_content: bytes) -> None:
-    normalized_filename = _normalized_upload_filename(file.filename)
+def _validated_pdf_filename(filename: str | None) -> str:
+    normalized_filename = _normalized_upload_filename(filename)
     if not normalized_filename:
         raise HTTPException(status_code=400, detail="Uploaded file must have a filename.")
 
-    if Path(normalized_filename).suffix.lower() != ".pdf":
+    if Path(normalized_filename).suffix.lower() != PDF_EXTENSION:
         raise HTTPException(status_code=400, detail="Only PDF uploads are supported.")
+
+    return normalized_filename
+
+
+def _validate_pdf_upload(file: UploadFile, file_content: bytes) -> None:
+    _validated_pdf_filename(file.filename)
 
     if file.content_type not in ALLOWED_PDF_CONTENT_TYPES:
         raise HTTPException(status_code=400, detail="Uploaded file has an unsupported content type.")
@@ -145,6 +173,11 @@ def _validate_pdf_upload(file: UploadFile, file_content: bytes) -> None:
 
     if not file_content.startswith(PDF_SIGNATURE):
         raise HTTPException(status_code=400, detail="Uploaded file is not a valid PDF.")
+
+
+def _temporary_upload_path() -> Path:
+    upload_filename = f"{uuid4().hex}{PDF_EXTENSION}"
+    return UPLOADS_DIR / upload_filename
 
 
 def _enforce_extract_rate_limit(request: Request) -> JSONResponse | None:
@@ -208,8 +241,8 @@ async def add_security_headers(request: Request, call_next):
     return _apply_security_headers(response, request)
 
 
-def _extract_pdf_text_safe(pdf_path: str):
-    validated_path = _validate_upload_path(pdf_path)
+def _extract_pdf_text_safe(pdf_path: Path):
+    validated_path = _validate_managed_upload_path(pdf_path)
     try:
         from pdf_parser import extract_pdf_text
     except ImportError as exc:
@@ -226,10 +259,10 @@ async def _extract_uploaded_pdf(file: UploadFile) -> tuple[str, float]:
         file_content = await file.read()
         _validate_pdf_upload(file, file_content)
 
-        temp_path = UPLOADS_DIR / f"{uuid4().hex}.pdf"
+        temp_path = _temporary_upload_path()
         temp_path.write_bytes(file_content)
 
-        extraction_result = _extract_pdf_text_safe(str(temp_path))
+        extraction_result = _extract_pdf_text_safe(temp_path)
         return extraction_result.text, extraction_result.confidence
     except HTTPException:
         raise
