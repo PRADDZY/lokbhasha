@@ -103,11 +103,25 @@ The upload card should keep:
 
 - PDF upload
 - pasted Marathi text
-- a full-screen analysis overlay during live processing
+- a shared full-screen analysis overlay during live processing
 - an inline error block for failed analysis requests
 - a single analyze action that is disabled while a live request is running
 
 It should visually match the sample card so the two paths feel equally supported.
+
+### Input Validation and Precedence
+
+The homepage keeps the current analysis contract exactly:
+
+- if a PDF file is present, the analysis run uses the extracted PDF text and ignores pasted Marathi text for that run
+- if no PDF file is present, the analysis run uses trimmed pasted Marathi text
+- if neither is present, the homepage stays in place and shows the existing inline request error
+
+The upload card should make that behavior legible:
+
+- show PDF selection state clearly
+- keep pasted Marathi text editable even when a PDF is selected
+- do not try to merge uploaded and pasted inputs into a combined request
 
 ## Sample Flow
 
@@ -116,7 +130,7 @@ It should visually match the sample card so the two paths feel equally supported
 When the user clicks the live sample action:
 
 1. the app sends the curated Marathi sample through the real `analyzeDocument(...)` path
-2. the loading state is shown clearly
+2. the shared full-screen analysis overlay is shown, using the text-intake variant instead of the PDF variant
 3. the response is stored in session state the same way as any other analysis
 4. the app also stores lightweight demo metadata containing the sample id, sample title, and suggested locales
 5. the app routes to `/result`
@@ -139,12 +153,34 @@ The homepage owns a single in-flight analysis state shared by both the sample an
 
 - Only one analysis request may run at a time.
 - While a request is running:
+  - the page-level overlay is visible for both entry paths
   - the sample call to action is disabled
   - the upload analyze action is disabled
   - file input and text input are disabled
 - Double-clicks or repeated taps during loading are ignored by the disabled controls.
 - After a failed request, the user may retry either path immediately.
 - There is no competing-request winner rule because the UI blocks concurrent analysis starts.
+
+### Request and Session State Table
+
+| State | Overlay | Disabled controls | Error placement | Session behavior |
+| --- | --- | --- | --- | --- |
+| `idle` | hidden | none | no inline error shown unless the previous request failed | keep the current `lokbhasha:last-result` payload until a new success replaces it |
+| `analyzing` | shared page-level overlay | sample action, upload action, file input, text input | homepage inline error is cleared before the request starts | do not clear the previous stored result while the new request is running |
+| `analyze failed` | hidden | none | homepage inline error under the active cards | keep the previous stored result and previous demo metadata unchanged |
+| `analyze succeeded` | hidden after route change | none on the result page | homepage error cleared, no result-page error by default | replace `lokbhasha:last-result` completely with the new analysis payload; replace demo metadata for sample runs and clear demo metadata for upload or paste runs |
+| `optional enrich running` | no page overlay | only the clicked enrich action and any action sharing the existing `loadingMode` gate | error stays local to the result page optional-output area | keep current analyzed content visible; do not overwrite existing localized or helper outputs until the enrich request succeeds |
+| `optional enrich failed` | no page overlay | none after failure | local error block in the optional-output area or baseline area | keep the current stored result unchanged and keep any previously generated optional outputs visible |
+
+### Session Replacement Rules
+
+- Starting a new homepage analysis clears the homepage inline error immediately.
+- A successful analysis always replaces the stored core result instead of merging with any older result.
+- A successful sample run stores demo metadata for that sample.
+- A successful upload or pasted-text run clears any older sample-only demo metadata.
+- Failed analysis requests do not mutate stored result data.
+- Optional enrich requests merge only the new successful enrichment fields into the existing stored result.
+- Failed optional enrich requests do not clear or replace previously generated localized text, plain explanation, or actions.
 
 ### Failure Handling
 
@@ -184,6 +220,7 @@ The `canonical route` label should be explicit and stable. For this batch it mea
 - source recognition ran
 - glossary-backed Marathi terms were available
 - canonical English came from the structured Lingo localization step
+- the label is derived from existing `localizationContext` fields and does not introduce a new backend field
 
 ### Optional Outputs
 
@@ -216,7 +253,7 @@ The result-page responsibilities should be split like this:
 - quality panel:
   - readiness summary
   - baseline comparison
-  - next-step confidence signals
+  - next-step readiness signals
 - optional outputs:
   - selected locales
   - plain explanation
@@ -227,6 +264,22 @@ The glossary and quality panels should answer:
 - what terminology was in play
 - what Lingo setup is active
 - whether the result is ready to compare or extend
+
+### Data Contract Mapping
+
+Batch 6 should stay frontend-led. Every new label in this batch must come from an existing field or a frontend-derived summary.
+
+| UI label | Source | Fallback |
+| --- | --- | --- |
+| `source type` | `AnalysisCoreResult.source` with optional `extractionConfidence` display | show only the source label if confidence is absent |
+| `recognized source locale` | `localizationContext.sourceLocale.recognized` and `matchesConfigured` | use the existing fallback localization context if the stored result lacks `localizationContext` |
+| `canonical route` | frontend-derived summary from `localizationContext.canonicalStage.requestShape`, `method`, and `glossaryMode`, plus the existing source-recognition message | fall back to the current fixed copy already used by the result page |
+| `default vs explicit Lingo setup` | `localizationContext.engineSelectionMode` and `engineId`; optional detail from `LingoSetupSummary.engine` | show `Default setup` if setup summary is still loading or unavailable |
+| `glossary package readiness` | `GlossarySyncStatus.syncState` from `GET /glossary-status` | loading state, then local error message if the fetch fails |
+| `preview term mappings` | `GlossarySyncStatus.previewEntries` from `GET /glossary-status` | omit the preview grid when no entries are available |
+| `baseline comparison` | `QualitySummary.baselineComparison.available` plus the existing `POST /quality/baseline-compare` result state | show the current compare CTA and empty state until the compare request is run |
+| `next-step readiness signals` | existing quality cards derived from `QualitySummary.layerStates`, `QualitySummary.selectedTargetLocales`, and `QualitySummary.glossaryStatus` | no numeric confidence score is added in Batch 6; loading and error states use current panel behavior |
+| `suggested locales` | frontend-only sample metadata stored alongside the session result for sample runs | omit pre-selection for user-uploaded or pasted runs |
 
 ## Data and State
 
@@ -263,12 +316,14 @@ The session payload should include:
 
 The result page should tolerate the absence of demo metadata for normal uploads.
 
+The homepage should keep using a single session key for the core analyzed result. Sample-only metadata may live in a second lightweight session key if that keeps normal result typing clean.
+
 ## Error Handling
 
 Homepage:
 
 - sample failure and upload failure should both show inline, human-readable errors
-- loading state should clearly indicate live processing
+- loading state should clearly indicate live processing through the shared page-level overlay
 
 Result page:
 
