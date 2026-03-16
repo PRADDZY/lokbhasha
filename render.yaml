@@ -23,11 +23,11 @@ services:
       - key: LINGODOTDEV_API_KEY
         sync: false
       - key: LINGO_BRAND_VOICE_COUNT
-        value: "0"
+        value: "1"
       - key: LINGO_INSTRUCTION_COUNT
-        value: "0"
+        value: "1"
       - key: LINGO_SCORER_COUNT
-        value: "0"
+        value: "1"
 
   - type: pserv
     name: lokbhasha-extract
