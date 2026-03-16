@@ -49,7 +49,9 @@ frontend/src/components/ResultsDisplay.tsx
 frontend/src/lib/api.ts               Browser client for the public analyze API
 frontend/tests/                       Frontend tests
 scripts/build_glossary_sqlite.py      Offline glossary builder
+dict/19k.json                         Active 19k government glossary source
 sqlite/glossary.sqlite3               Repo-tracked glossary artifact
+sqlite/lingo-glossary-sync.json       Prepared glossary snapshot for MCP-facing status
 ```
 
 ## Local setup
@@ -94,6 +96,7 @@ Analyze service variables:
 - `LINGODOTDEV_ENGINE_ID` (optional)
 - `LINGODOTDEV_TARGET_LOCALES`
 - `GLOSSARY_DB_PATH`
+- `GLOSSARY_SOURCE_PATH` (optional, defaults to `dict/19k.json`)
 
 Extraction service variables:
 - `BACKEND_PORT`
@@ -106,7 +109,7 @@ Extraction service variables:
 If you have the source dictionary locally, rebuild the SQLite artifact with:
 
 ```bash
-python scripts/build_glossary_sqlite.py --source ./sqlite/lingo_dev_mr_en.json --output ./sqlite/glossary.sqlite3
+python scripts/build_glossary_sqlite.py --source ./dict/19k.json --output ./sqlite/glossary.sqlite3
 ```
 
 Verify that the analyze service can open it:
