@@ -92,6 +92,7 @@ The sample card should contain:
 - a title
 - a short civic-facing summary of the sample circular
 - a one-click call to action that runs the real pipeline
+- visible suggested locale chips for the demo path
 - a note that this is a live pass through the same system used for uploaded documents
 
 The sample should use curated Marathi text stored in the frontend so the click path is instant to start, but the actual result must come from a real call to `/analyze`.
@@ -102,7 +103,9 @@ The upload card should keep:
 
 - PDF upload
 - pasted Marathi text
-- current loading and error behavior
+- a full-screen analysis overlay during live processing
+- an inline error block for failed analysis requests
+- a single analyze action that is disabled while a live request is running
 
 It should visually match the sample card so the two paths feel equally supported.
 
@@ -115,7 +118,33 @@ When the user clicks the live sample action:
 1. the app sends the curated Marathi sample through the real `analyzeDocument(...)` path
 2. the loading state is shown clearly
 3. the response is stored in session state the same way as any other analysis
-4. the app routes to `/result`
+4. the app also stores lightweight demo metadata containing the sample id, sample title, and suggested locales
+5. the app routes to `/result`
+
+### Locale Suggestions
+
+Locale suggestions are guidance, not generated output.
+
+- Each curated sample includes a small list of suggested target locales.
+- These suggested locales are shown on the homepage sample card before analysis.
+- After the sample result loads, those locales are pre-selected in the result-page language picker.
+- They are not translated automatically.
+- User-uploaded content does not receive pre-selected locales unless localized output already exists in session state.
+
+This keeps additional language generation opt-in while still making the demo path feel guided.
+
+### Request-State Rules
+
+The homepage owns a single in-flight analysis state shared by both the sample and upload paths.
+
+- Only one analysis request may run at a time.
+- While a request is running:
+  - the sample call to action is disabled
+  - the upload analyze action is disabled
+  - file input and text input are disabled
+- Double-clicks or repeated taps during loading are ignored by the disabled controls.
+- After a failed request, the user may retry either path immediately.
+- There is no competing-request winner rule because the UI blocks concurrent analysis starts.
 
 ### Failure Handling
 
@@ -145,11 +174,16 @@ The top information band should make these items easy to scan:
 
 - source type
 - recognized source locale
-- canonical stage shape
-- active Lingo setup
-- glossary match count
+- canonical route
+- whether the request used the default or an explicit Lingo setup
 
 This should feel like evidence for what happened, not just metadata boxes.
+
+The `canonical route` label should be explicit and stable. For this batch it means:
+
+- source recognition ran
+- glossary-backed Marathi terms were available
+- canonical English came from the structured Lingo localization step
 
 ### Optional Outputs
 
@@ -165,7 +199,30 @@ They should remain opt-in and visually secondary.
 
 Keep the existing quality and glossary panels, but tighten their presentation so they support the story instead of competing with it.
 
-These panels should answer:
+The result-page responsibilities should be split like this:
+
+- top story summary:
+  - source type
+  - recognized source locale
+  - canonical route
+  - default vs explicit Lingo setup
+- localization context panel:
+  - canonical English stage details
+  - active Lingo setup summary
+- glossary panel:
+  - glossary match count
+  - glossary package readiness
+  - preview term mappings
+- quality panel:
+  - readiness summary
+  - baseline comparison
+  - next-step confidence signals
+- optional outputs:
+  - selected locales
+  - plain explanation
+  - key actions
+
+The glossary and quality panels should answer:
 
 - what terminology was in play
 - what Lingo setup is active
@@ -195,6 +252,17 @@ That keeps:
 - the code path small
 - regressions easier to test
 
+The session payload should include:
+
+- the normal analysis result
+- optional enrichments as they are generated
+- optional demo metadata for sample-driven runs only:
+  - sample id
+  - sample title
+  - suggested locales
+
+The result page should tolerate the absence of demo metadata for normal uploads.
+
 ## Error Handling
 
 Homepage:
@@ -207,6 +275,9 @@ Result page:
 - missing optional sections should not look broken
 - failed enrich requests should stay local to the requested action
 - existing analyzed content must remain visible after an optional request failure
+- if `/result` is opened without valid stored session data, show a clean empty state with a return path to the homepage
+- if stored session data is malformed, clear it and show the same empty state instead of crashing
+- refreshing the result page in the same tab should preserve the current analyzed content through session storage
 
 ## Testing
 
@@ -217,8 +288,11 @@ Add or update tests for:
 - balanced homepage copy and dual action layout
 - live sample controls existing on the homepage
 - sample button using the same real analyze path contract
+- sample metadata and suggested locales being persisted without generating output
+- homepage controls being disabled while a live sample or upload analysis is running
 - result page preserving side-by-side original and canonical panes
 - result page showing stronger guided hierarchy and demo-ready provenance
+- result page empty state for missing or malformed session data
 - optional outputs remaining secondary
 
 ### Existing Verification
