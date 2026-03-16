@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { analyzeDocument, enrichDocument } from '../src/lib/api'
-import type { AnalysisCoreResult, AnalysisEnrichmentResult } from '../src/lib/types'
+import { analyzeDocument, enrichDocument, fetchGlossaryStatus } from '../src/lib/api'
+import type { AnalysisCoreResult, AnalysisEnrichmentResult, GlossarySyncStatus } from '../src/lib/types'
 
 
 function buildExpectedCoreResult(): AnalysisCoreResult {
@@ -89,6 +89,56 @@ test('enrichDocument posts JSON to NEXT_PUBLIC_API_BASE_URL/enrich and returns o
         }),
       },
     ])
+    assert.deepEqual(result, expected)
+  } finally {
+    if (originalBaseUrl === undefined) {
+      delete process.env.NEXT_PUBLIC_API_BASE_URL
+    } else {
+      process.env.NEXT_PUBLIC_API_BASE_URL = originalBaseUrl
+    }
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('fetchGlossaryStatus reads glossary sync metadata from NEXT_PUBLIC_API_BASE_URL/glossary-status', async () => {
+  const originalBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+  const originalFetch = globalThis.fetch
+  const expected: GlossarySyncStatus = {
+    source: 'sqlite',
+    sourceLocale: 'mr',
+    targetLocale: 'en',
+    syncState: 'ready',
+    totalTerms: 249048,
+    customTranslationTerms: 249040,
+    nonTranslatableTerms: 8,
+    packageHash: 'abc123',
+    lastSyncedAt: '2026-03-16T12:00:00.000Z',
+    fallbackMode: 'compact_request_hints',
+    previewEntries: [
+      {
+        sourceLocale: 'mr',
+        targetLocale: 'en',
+        sourceText: 'अर्ज',
+        targetText: 'application',
+        type: 'custom_translation',
+        hint: null,
+      },
+    ],
+  }
+  let requestedUrl = ''
+
+  process.env.NEXT_PUBLIC_API_BASE_URL = 'https://lokbhasha-analyze.onrender.com'
+  globalThis.fetch = async (input) => {
+    requestedUrl = String(input)
+    return new Response(JSON.stringify(expected), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }
+
+  try {
+    const result = await fetchGlossaryStatus()
+    assert.equal(requestedUrl, 'https://lokbhasha-analyze.onrender.com/glossary-status')
     assert.deepEqual(result, expected)
   } finally {
     if (originalBaseUrl === undefined) {

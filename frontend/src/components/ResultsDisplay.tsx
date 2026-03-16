@@ -1,10 +1,10 @@
 "use client"
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-import { enrichDocument } from '@/lib/api'
-import type { AnalysisSessionResult } from '@/lib/api'
+import { enrichDocument, fetchGlossaryStatus } from '@/lib/api'
+import type { AnalysisSessionResult, GlossarySyncStatus } from '@/lib/api'
 import { buildLinkedGlossaryState } from '@/lib/glossary-links'
 import { INDIAN_LANGUAGE_OPTIONS } from '@/lib/indian-languages'
 
@@ -70,12 +70,14 @@ function LinkedParts({ parts, activeLinkId, onActivate }: LinkedPartProps) {
 
 export function ResultsDisplay({ result }: ResultsDisplayProps) {
   const [sessionResult, setSessionResult] = useState(result)
+  const [glossaryStatus, setGlossaryStatus] = useState<GlossarySyncStatus | null>(null)
   const [selectedLocales, setSelectedLocales] = useState<string[]>(
     Object.keys(result.localizedText ?? {})
   )
   const [activeLinkId, setActiveLinkId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [loadingMode, setLoadingMode] = useState<'translation' | 'explanation' | 'actions' | null>(null)
+  const [glossaryStatusError, setGlossaryStatusError] = useState('')
 
   const linkedState = buildLinkedGlossaryState({
     marathiText: sessionResult.marathiText,
@@ -120,6 +122,46 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
       : actionsReady
         ? 'Key actions ready'
         : 'Generate key actions'
+  const glossarySyncStateLabel =
+    glossaryStatus?.syncState === 'ready'
+      ? 'Ready'
+      : glossaryStatus?.syncState === 'drift'
+        ? 'Drift detected'
+        : glossaryStatus?.syncState === 'missing'
+          ? 'Not prepared'
+          : 'Loading'
+  const fallbackModeLabel =
+    glossaryStatus?.fallbackMode === 'compact_request_hints'
+      ? 'Compact request hints'
+      : 'Unavailable'
+  const glossaryPreviewEntries = glossaryStatus?.previewEntries ?? []
+
+  useEffect(() => {
+    let isCancelled = false
+
+    void fetchGlossaryStatus()
+      .then((status) => {
+        if (isCancelled) {
+          return
+        }
+
+        setGlossaryStatus(status)
+        setGlossaryStatusError('')
+      })
+      .catch((glossaryError) => {
+        if (isCancelled) {
+          return
+        }
+
+        setGlossaryStatusError(
+          glossaryError instanceof Error ? glossaryError.message : 'Glossary sync status failed to load.'
+        )
+      })
+
+    return () => {
+      isCancelled = true
+    }
+  }, [])
 
   function persistResult(nextResult: AnalysisSessionResult) {
     setSessionResult(nextResult)
@@ -231,6 +273,70 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
               <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Glossary matches</p>
                 <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{glossaryMatchCount}</p>
+              </div>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-5">
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Glossary sync</p>
+                  <h3 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Lingo glossary package</h3>
+                  <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--muted)]">
+                    SQLite still handles fast local term detection. This panel shows whether the packaged Lingo glossary view is ready,
+                    how much coverage it has, and which fallback request hints remain enabled while runtime requests stay compact.
+                  </p>
+                </div>
+                <div className="rounded-full border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--ink)]">
+                  {glossarySyncStateLabel}
+                </div>
+              </div>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Glossary coverage</p>
+                  <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
+                    {glossaryStatus ? `${glossaryStatus.totalTerms} terms` : 'Loading glossary status...'}
+                  </p>
+                </div>
+                <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Custom translations</p>
+                  <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
+                    {glossaryStatus ? glossaryStatus.customTranslationTerms : 'Loading'}
+                  </p>
+                </div>
+                <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Fallback request hints</p>
+                  <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{fallbackModeLabel}</p>
+                </div>
+                <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Last prepared</p>
+                  <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
+                    {glossaryStatus?.lastSyncedAt ? glossaryStatus.lastSyncedAt.slice(0, 10) : 'Not available'}
+                  </p>
+                </div>
+              </div>
+
+              {glossaryStatusError ? (
+                <div className="mt-4 rounded-[1.25rem] border border-[rgba(140,55,28,0.18)] bg-[rgba(190,89,48,0.08)] px-4 py-3 text-sm text-[var(--accent)]">
+                  {glossaryStatusError}
+                </div>
+              ) : null}
+
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                {glossaryPreviewEntries.map((entry) => (
+                  <div
+                    key={`${entry.sourceText}-${entry.targetText}`}
+                    className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4"
+                  >
+                    <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">{entry.type}</p>
+                    <p className="mt-3 text-base font-semibold text-[var(--ink)]">
+                      {entry.sourceText} {'->'} {entry.targetText}
+                    </p>
+                    <p className="mt-2 text-sm text-[var(--muted)]">
+                      {entry.sourceLocale} to {entry.targetLocale}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
