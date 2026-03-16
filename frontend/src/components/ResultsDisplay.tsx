@@ -3,8 +3,8 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
-import { enrichDocument, fetchGlossaryStatus } from '@/lib/api'
-import type { AnalysisSessionResult, GlossarySyncStatus } from '@/lib/api'
+import { enrichDocument, fetchGlossaryStatus, fetchLingoSetup } from '@/lib/api'
+import type { AnalysisSessionResult, GlossarySyncStatus, LingoSetupSummary } from '@/lib/api'
 import { buildLinkedGlossaryState } from '@/lib/glossary-links'
 import { INDIAN_LANGUAGE_OPTIONS } from '@/lib/indian-languages'
 
@@ -71,6 +71,7 @@ function LinkedParts({ parts, activeLinkId, onActivate }: LinkedPartProps) {
 export function ResultsDisplay({ result }: ResultsDisplayProps) {
   const [sessionResult, setSessionResult] = useState(result)
   const [glossaryStatus, setGlossaryStatus] = useState<GlossarySyncStatus | null>(null)
+  const [lingoSetup, setLingoSetup] = useState<LingoSetupSummary | null>(null)
   const [selectedLocales, setSelectedLocales] = useState<string[]>(
     Object.keys(result.localizedText ?? {})
   )
@@ -78,6 +79,7 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
   const [error, setError] = useState('')
   const [loadingMode, setLoadingMode] = useState<'translation' | 'explanation' | 'actions' | null>(null)
   const [glossaryStatusError, setGlossaryStatusError] = useState('')
+  const [lingoSetupError, setLingoSetupError] = useState('')
 
   const linkedState = buildLinkedGlossaryState({
     marathiText: sessionResult.marathiText,
@@ -135,6 +137,54 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
       ? 'Compact request hints'
       : 'Unavailable'
   const glossaryPreviewEntries = glossaryStatus?.previewEntries ?? []
+  const lingoSetupLabel =
+    lingoSetup?.engine.status === 'default_org_engine'
+      ? 'Default setup'
+      : 'Explicit setup'
+  const lingoSetupDetail = lingoSetup?.engine.note ?? 'No explicit setup selected'
+  const lingoLocaleCoverageValue = lingoSetup
+    ? `${lingoSetup.selectedTargetLocales.length + 2} locales`
+    : 'Loading setup...'
+  const lingoLocaleCoverageDetail = lingoSetup
+    ? [
+        'Marathi',
+        'English',
+        ...lingoSetup.selectedTargetLocales
+          .slice(0, 2)
+          .map((locale) => INDIAN_LANGUAGE_OPTIONS.find((option) => option.value === locale)?.label || locale),
+        ...(lingoSetup.selectedTargetLocales.length > 2
+          ? [`+${lingoSetup.selectedTargetLocales.length - 2} more`]
+          : []),
+      ].join(', ')
+    : 'No locale list found'
+  const brandVoiceValue = lingoSetup
+    ? lingoSetup.layers.brandVoices.configuredCount > 0
+      ? 'Present'
+      : 'Not provided'
+    : 'Loading'
+  const brandVoiceDetail = lingoSetup
+    ? lingoSetup.layers.brandVoices.configuredCount > 0
+      ? 'Brand voice is included'
+      : 'No brand voice attached'
+    : 'No brand voice attached'
+  const instructionValue = lingoSetup
+    ? `${lingoSetup.layers.instructions.configuredCount} instructions`
+    : 'Loading'
+  const instructionDetail = lingoSetup
+    ? lingoSetup.layers.instructions.configuredCount > 0
+      ? 'Included in this setup'
+      : 'No extra instructions added'
+    : 'No extra instructions added'
+  const reviewerValue = lingoSetup
+    ? lingoSetup.layers.aiReviewers.configuredCount > 0
+      ? `${lingoSetup.layers.aiReviewers.configuredCount} reviewers`
+      : 'No reviewers listed'
+    : 'Loading'
+  const reviewerDetail = lingoSetup
+    ? lingoSetup.layers.aiReviewers.configuredCount > 0
+      ? 'Reviewer names are listed'
+      : 'No reviewer names found'
+    : 'No reviewer names found'
 
   useEffect(() => {
     let isCancelled = false
@@ -155,6 +205,25 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
 
         setGlossaryStatusError(
           glossaryError instanceof Error ? glossaryError.message : 'Glossary sync status failed to load.'
+        )
+      })
+
+    void fetchLingoSetup()
+      .then((setup) => {
+        if (isCancelled) {
+          return
+        }
+
+        setLingoSetup(setup)
+        setLingoSetupError('')
+      })
+      .catch((setupError) => {
+        if (isCancelled) {
+          return
+        }
+
+        setLingoSetupError(
+          setupError instanceof Error ? setupError.message : 'Lingo setup failed to load.'
         )
       })
 
@@ -274,6 +343,53 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Glossary matches</p>
                 <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{glossaryMatchCount}</p>
               </div>
+            </div>
+
+            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-5">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Lingo setup</p>
+                <h3 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Read-only setup summary</h3>
+                <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--muted)]">
+                  This shows the Lingo configuration used for this result.
+                </p>
+                <p className="mt-1 max-w-3xl text-sm leading-6 text-[var(--muted)]">
+                  Only current settings are shown. Missing fields are marked clearly.
+                </p>
+              </div>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+                <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Active setup</p>
+                  <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{lingoSetupLabel}</p>
+                  <p className="mt-2 text-sm text-[var(--muted)]">{lingoSetupDetail}</p>
+                </div>
+                <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Locale coverage</p>
+                  <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{lingoLocaleCoverageValue}</p>
+                  <p className="mt-2 text-sm text-[var(--muted)]">{lingoLocaleCoverageDetail}</p>
+                </div>
+                <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Brand voice</p>
+                  <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{brandVoiceValue}</p>
+                  <p className="mt-2 text-sm text-[var(--muted)]">{brandVoiceDetail}</p>
+                </div>
+                <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Instructions</p>
+                  <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{instructionValue}</p>
+                  <p className="mt-2 text-sm text-[var(--muted)]">{instructionDetail}</p>
+                </div>
+                <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">AI reviewers</p>
+                  <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{reviewerValue}</p>
+                  <p className="mt-2 text-sm text-[var(--muted)]">{reviewerDetail}</p>
+                </div>
+              </div>
+
+              {lingoSetupError ? (
+                <div className="mt-4 rounded-[1.25rem] border border-[rgba(140,55,28,0.18)] bg-[rgba(190,89,48,0.08)] px-4 py-3 text-sm text-[var(--accent)]">
+                  {lingoSetupError}
+                </div>
+              ) : null}
             </div>
 
             <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-5">

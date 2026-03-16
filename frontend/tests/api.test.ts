@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
+import * as api from '../src/lib/api'
 import { analyzeDocument, enrichDocument, fetchGlossaryStatus } from '../src/lib/api'
 import type { AnalysisCoreResult, AnalysisEnrichmentResult, GlossarySyncStatus } from '../src/lib/types'
 
@@ -148,4 +149,8 @@ test('fetchGlossaryStatus reads glossary sync metadata from NEXT_PUBLIC_API_BASE
     }
     globalThis.fetch = originalFetch
   }
+})
+
+test('frontend api exports fetchLingoSetup for the read-only Lingo setup panel', async () => {
+  assert.equal(typeof api.fetchLingoSetup, 'function')
 })

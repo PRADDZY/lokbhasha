@@ -11,8 +11,9 @@ import { getAllowedOrigins, getAnalyzePort, getGlossaryDatabasePath } from './co
 import { extractPdfText } from './extraction'
 import { detectGlossaryHits } from './glossary'
 import { getGlossarySyncStatus } from './glossary-sync'
+import { getLingoSetupSummary } from './lingo-setup'
 import { createLingoClient } from './lingo'
-import type { AnalysisCoreResult, AnalysisEnrichmentResult, GlossarySyncStatus } from './types'
+import type { AnalysisCoreResult, AnalysisEnrichmentResult, GlossarySyncStatus, LingoSetupSummary } from './types'
 
 
 type AnalyzeRequestHandler = (formData: FormData) => Promise<AnalysisCoreResult>
@@ -26,11 +27,13 @@ type EnrichRequestHandler = (
 ) => Promise<AnalysisEnrichmentResult>
 
 type GlossaryStatusRequestHandler = () => Promise<GlossarySyncStatus> | GlossarySyncStatus
+type LingoSetupRequestHandler = () => Promise<LingoSetupSummary> | LingoSetupSummary
 
 type AnalyzeServerDependencies = {
   handleAnalyzeRequest?: AnalyzeRequestHandler
   handleEnrichRequest?: EnrichRequestHandler
   handleGlossaryStatusRequest?: GlossaryStatusRequestHandler
+  handleLingoSetupRequest?: LingoSetupRequestHandler
 }
 
 async function requestToFormData(request: FastifyRequest): Promise<FormData> {
@@ -105,12 +108,21 @@ export function createGlossaryStatusRequestHandler(): GlossaryStatusRequestHandl
   })
 }
 
+export function createLingoSetupRequestHandler(): LingoSetupRequestHandler {
+  return () =>
+    getLingoSetupSummary({
+      databasePath: getGlossaryDatabasePath(),
+    })
+}
+
 export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {}): FastifyInstance {
   const server = Fastify({ logger: false })
   const handleAnalyzeRequest = dependencies.handleAnalyzeRequest ?? createAnalyzeRequestHandler()
   const enrichRequestHandler = dependencies.handleEnrichRequest ?? createEnrichRequestHandler()
   const glossaryStatusRequestHandler =
     dependencies.handleGlossaryStatusRequest ?? createGlossaryStatusRequestHandler()
+  const lingoSetupRequestHandler =
+    dependencies.handleLingoSetupRequest ?? createLingoSetupRequestHandler()
 
   server.register(cors, {
     origin: getAllowedOrigins(),
@@ -135,6 +147,21 @@ export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {})
   server.get('/glossary-status', async (_, reply) => {
     try {
       const result = await glossaryStatusRequestHandler()
+      return reply.send(result)
+    } catch (error) {
+      const status = getAnalyzeErrorStatus(error)
+      const message = status === 500
+        ? 'Analysis failed.'
+        : error instanceof Error
+          ? error.message
+          : 'Analysis failed.'
+      return reply.code(status).send({ detail: message })
+    }
+  })
+
+  server.get('/lingo-setup', async (_, reply) => {
+    try {
+      const result = await lingoSetupRequestHandler()
       return reply.send(result)
     } catch (error) {
       const status = getAnalyzeErrorStatus(error)

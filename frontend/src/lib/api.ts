@@ -3,6 +3,7 @@ import type {
   AnalysisEnrichmentRequest,
   AnalysisEnrichmentResult,
   GlossarySyncStatus,
+  LingoSetupSummary,
 } from './types'
 
 
@@ -24,6 +25,10 @@ function getGlossaryStatusApiUrl(): string {
   return `${getApiBaseUrl()}/glossary-status`
 }
 
+function getLingoSetupApiUrl(): string {
+  return `${getApiBaseUrl()}/lingo-setup`
+}
+
 export type {
   ActionItem,
   AnalysisCoreResult,
@@ -33,6 +38,7 @@ export type {
   GlossaryHit,
   GlossarySyncStatus,
   LingoGlossaryEntry,
+  LingoSetupSummary,
 } from './types'
 
 export async function analyzeDocument(input: {
@@ -88,4 +94,17 @@ export async function fetchGlossaryStatus(): Promise<GlossarySyncStatus> {
   }
 
   return payload as GlossarySyncStatus
+}
+
+export async function fetchLingoSetup(): Promise<LingoSetupSummary> {
+  const response = await fetch(getLingoSetupApiUrl(), {
+    method: 'GET',
+  })
+
+  const payload = (await response.json().catch(() => null)) as LingoSetupSummary | { detail?: string } | null
+  if (!response.ok) {
+    throw new Error((payload as { detail?: string } | null)?.detail || 'Analysis failed.')
+  }
+
+  return payload as LingoSetupSummary
 }

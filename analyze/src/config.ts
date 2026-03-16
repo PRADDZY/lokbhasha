@@ -3,6 +3,29 @@ import path from 'node:path'
 
 const DEFAULT_ALLOWED_ORIGINS = ['http://localhost:3000']
 const DEFAULT_ANALYZE_PORT = 5001
+const DEFAULT_CONFIGURED_TARGET_LOCALES = [
+  'as',
+  'bn',
+  'brx',
+  'doi',
+  'gu',
+  'hi',
+  'kn',
+  'ks',
+  'kok',
+  'mai',
+  'ml',
+  'mni',
+  'ne',
+  'or',
+  'pa',
+  'sa',
+  'sat',
+  'sd',
+  'ta',
+  'te',
+  'ur',
+]
 
 function normalizeBaseUrl(url: string): string {
   const trimmed = url.trim()
@@ -52,4 +75,18 @@ export function getGlossarySyncSnapshotPath(): string {
 
 export function getLingoApiKey(): string {
   return (process.env.LINGODOTDEV_API_KEY || process.env.LINGO_DEV_API_KEY || '').trim()
+}
+
+export function getConfiguredTargetLocales(): string[] {
+  const configured = (process.env.LINGODOTDEV_TARGET_LOCALES || '').trim()
+  if (!configured) {
+    return DEFAULT_CONFIGURED_TARGET_LOCALES
+  }
+
+  const locales = configured
+    .split(',')
+    .map((locale) => locale.trim())
+    .filter(Boolean)
+
+  return locales.length ? locales : DEFAULT_CONFIGURED_TARGET_LOCALES
 }

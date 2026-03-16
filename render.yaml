@@ -17,7 +17,7 @@ services:
       - key: GLOSSARY_DB_PATH
         value: /app/sqlite/glossary.sqlite3
       - key: LINGODOTDEV_TARGET_LOCALES
-        value: hi,gu
+        value: as,bn,brx,doi,gu,hi,kn,ks,kok,mai,ml,mni,ne,or,pa,sa,sat,sd,ta,te,ur
       - key: LINGODOTDEV_API_KEY
         sync: false
 
