@@ -69,6 +69,7 @@ dict/*.json
 dict/*.jsonl
 dict/*.txt
 dict/*.sqlite3
+!dict/19k.json
 
 # Project planning (local only)
 lokbhasha_plan.md

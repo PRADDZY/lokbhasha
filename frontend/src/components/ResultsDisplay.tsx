@@ -204,6 +204,16 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
     glossaryStatus?.fallbackMode === 'compact_request_hints'
       ? 'Compact request hints'
       : 'Unavailable'
+  const glossaryAuthorityLabel = glossaryStatus?.authority === 'lingo_mcp' ? 'Lingo MCP' : 'Loading'
+  const glossaryManagementLabel = glossaryStatus?.managementMode === 'mcp_only'
+    ? 'Read-only in LokBhasha'
+    : 'Unavailable'
+  const glossaryPreparedLabel = glossaryStatus?.lastPreparedAt
+    ? glossaryStatus.lastPreparedAt.slice(0, 10)
+    : 'Not prepared'
+  const glossaryLastKnownSyncLabel = glossaryStatus?.lastSyncedAt
+    ? glossaryStatus.lastSyncedAt.slice(0, 10)
+    : 'Not recorded'
   const glossaryPreviewEntries = glossaryStatus?.previewEntries ?? []
   const lingoSetupLabel =
     lingoSetup?.engine.status === 'default_org_engine'
@@ -268,8 +278,8 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
     : 'Loading quality summary...'
   const qualityGlossaryCoverageDetail = qualitySummary
     ? qualitySummary.glossaryStatus.lastSyncedAt
-      ? `Last prepared ${qualitySummary.glossaryStatus.lastSyncedAt.slice(0, 10)}`
-      : 'No prepared timestamp found.'
+      ? `Last known Lingo sync ${qualitySummary.glossaryStatus.lastSyncedAt.slice(0, 10)}`
+      : 'Local package is prepared separately from MCP sync.'
     : 'Waiting for quality summary.'
   const localeReadinessValue = qualitySummary
     ? `${qualitySummary.selectedTargetLocales.length + 2} locales ready`
@@ -604,8 +614,8 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
                   <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">What glossary matched</p>
                   <h3 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Lingo glossary package</h3>
                   <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--muted)]">
-                    SQLite still handles fast local term detection. This panel shows whether the packaged Lingo glossary view is ready,
-                    how much coverage it has, and which fallback request hints remain enabled while runtime requests stay compact.
+                    Lingo remains the authoritative glossary layer for translation behavior, while SQLite still handles fast local term detection.
+                    This panel shows whether the packaged Lingo glossary view is ready, how much coverage it has, and which fallback request hints remain enabled while runtime requests stay compact.
                   </p>
                 </div>
                 <div className="rounded-full border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-sm font-semibold text-[var(--ink)]">
@@ -621,10 +631,9 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
                   </p>
                 </div>
                 <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
-                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Custom translations</p>
-                  <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
-                    {glossaryStatus ? glossaryStatus.customTranslationTerms : 'Loading'}
-                  </p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Authority</p>
+                  <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{glossaryAuthorityLabel}</p>
+                  <p className="mt-2 text-sm text-[var(--muted)]">{glossaryManagementLabel}</p>
                 </div>
                 <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Fallback request hints</p>
@@ -632,8 +641,25 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
                 </div>
                 <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
                   <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Last prepared</p>
+                  <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{glossaryPreparedLabel}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Custom translations</p>
                   <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
-                    {glossaryStatus?.lastSyncedAt ? glossaryStatus.lastSyncedAt.slice(0, 10) : 'Not available'}
+                    {glossaryStatus ? glossaryStatus.customTranslationTerms : 'Loading'}
+                  </p>
+                  <p className="mt-2 text-sm text-[var(--muted)]">
+                    Local detection runs from the packaged SQLite artifact.
+                  </p>
+                </div>
+                <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Last known Lingo sync</p>
+                  <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{glossaryLastKnownSyncLabel}</p>
+                  <p className="mt-2 text-sm text-[var(--muted)]">
+                    LokBhasha is read-only here. Use Lingo MCP for glossary management changes.
                   </p>
                 </div>
               </div>

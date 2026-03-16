@@ -13,7 +13,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 LOGGER = logging.getLogger(__name__)
 
 
-DEFAULT_SOURCE_PATH = ROOT_DIR / "sqlite" / "lingo_dev_mr_en.json"
+DEFAULT_SOURCE_PATH = ROOT_DIR / "dict" / "19k.json"
 DEFAULT_OUTPUT_PATH = ROOT_DIR / "sqlite" / "glossary.sqlite3"
 
 
@@ -54,7 +54,7 @@ def _dictionary_text(value: object) -> str:
     return value if isinstance(value, str) else ""
 
 
-def _dictionary_entry_values(entry_key: str, payload: object) -> tuple[str, str] | None:
+def _map_entry_values(entry_key: str, payload: object) -> tuple[str, str] | None:
     if not isinstance(payload, dict):
         return None
 
@@ -74,6 +74,39 @@ def _dictionary_entry_values(entry_key: str, payload: object) -> tuple[str, str]
     return normalized_term, english_term
 
 
+def _list_entry_values(payload: object) -> tuple[str, str] | None:
+    if not isinstance(payload, dict):
+        return None
+
+    english_source = _dictionary_text(payload.get("word"))
+    marathi_source = _dictionary_text(payload.get("meaning"))
+
+    normalized_term = normalize_term(marathi_source)
+    english_term = extract_primary_meaning(english_source)
+    if not normalized_term or not english_term:
+        return None
+
+    return normalized_term, english_term
+
+
+def _iter_entry_values(raw_dictionary: object):
+    if isinstance(raw_dictionary, dict):
+        for entry_key, payload in raw_dictionary.items():
+            entry_values = _map_entry_values(str(entry_key), payload)
+            if entry_values is not None:
+                yield entry_values
+        return
+
+    if isinstance(raw_dictionary, list):
+        for payload in raw_dictionary:
+            entry_values = _list_entry_values(payload)
+            if entry_values is not None:
+                yield entry_values
+        return
+
+    raise ValueError("Glossary source must be a JSON object or list.")
+
+
 def build_glossary_sqlite(
     source_path: Path = DEFAULT_SOURCE_PATH,
     output_path: Path = DEFAULT_OUTPUT_PATH,
@@ -84,20 +117,14 @@ def build_glossary_sqlite(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     with source_path.open("r", encoding="utf-8") as source_file:
-        raw_dictionary: dict[str, dict[str, str]] = json.load(source_file)
+        raw_dictionary = json.load(source_file)
 
     connection = sqlite3.connect(output_path)
     try:
         _initialize_schema(connection)
 
         inserted = 0
-        for marathi_term, payload in raw_dictionary.items():
-            entry_values = _dictionary_entry_values(marathi_term, payload)
-            if entry_values is None:
-                continue
-
-            normalized_term, english_term = entry_values
-
+        for normalized_term, english_term in _iter_entry_values(raw_dictionary):
             connection.execute(
                 """
                 INSERT OR REPLACE INTO glossary (marathi, english)

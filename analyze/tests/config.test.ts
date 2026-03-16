@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import path from 'node:path'
 import test from 'node:test'
 
-import { getGlossaryDatabasePath } from '../src/config'
+import { getGlossaryDatabasePath, getGlossarySourcePath } from '../src/config'
 
 
 test('getGlossaryDatabasePath defaults to the repo tracked sqlite glossary', () => {
@@ -34,6 +34,39 @@ test('getGlossaryDatabasePath respects an explicit environment override', () => 
       delete process.env.GLOSSARY_DB_PATH
     } else {
       process.env.GLOSSARY_DB_PATH = originalValue
+    }
+  }
+})
+
+test('getGlossarySourcePath defaults to the 19k glossary source in dict', () => {
+  const originalValue = process.env.GLOSSARY_SOURCE_PATH
+  delete process.env.GLOSSARY_SOURCE_PATH
+
+  try {
+    assert.equal(
+      getGlossarySourcePath(),
+      path.resolve(process.cwd(), '..', 'dict', '19k.json')
+    )
+  } finally {
+    if (originalValue === undefined) {
+      delete process.env.GLOSSARY_SOURCE_PATH
+    } else {
+      process.env.GLOSSARY_SOURCE_PATH = originalValue
+    }
+  }
+})
+
+test('getGlossarySourcePath respects an explicit environment override', () => {
+  const originalValue = process.env.GLOSSARY_SOURCE_PATH
+  process.env.GLOSSARY_SOURCE_PATH = '/tmp/custom-government-glossary.json'
+
+  try {
+    assert.equal(getGlossarySourcePath(), '/tmp/custom-government-glossary.json')
+  } finally {
+    if (originalValue === undefined) {
+      delete process.env.GLOSSARY_SOURCE_PATH
+    } else {
+      process.env.GLOSSARY_SOURCE_PATH = originalValue
     }
   }
 })
