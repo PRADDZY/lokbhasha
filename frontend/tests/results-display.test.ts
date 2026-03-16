@@ -20,6 +20,21 @@ test('ResultsDisplay is built around side-by-side original and canonical panes w
   assert.doesNotMatch(source, /Terminology sent to Lingo/)
 })
 
+test('ResultsDisplay derives button labels and disabled states through named helpers', async () => {
+  const source = await readFile(resultsDisplayPath, 'utf8')
+
+  assert.match(source, /const extractionConfidenceLabel =/)
+  assert.match(source, /const selectedLanguageLabel =/)
+  assert.match(source, /const translationDisabled =/)
+  assert.match(source, /const explanationDisabled =/)
+  assert.match(source, /const explanationButtonLabel =/)
+  assert.match(source, /const actionsDisabled =/)
+  assert.match(source, /const actionsButtonLabel =/)
+  assert.doesNotMatch(source, /disabled=\{!pendingLocales\.length \|\| loadingMode !== null\}/)
+  assert.doesNotMatch(source, /disabled=\{Boolean\(sessionResult\.simplifiedEnglish\) \|\| loadingMode !== null\}/)
+  assert.doesNotMatch(source, /disabled=\{Boolean\(sessionResult\.actions\) \|\| loadingMode !== null\}/)
+})
+
 test('Home page copy no longer promises simplification and key actions as default output', async () => {
   const source = await readFile(homePagePath, 'utf8')
 

@@ -13,11 +13,18 @@ REPLACEMENTS = {
 }
 
 
-def simplify_english_text(english_text: str) -> str:
-    simplified = english_text.strip()
+def _apply_replacements(english_text: str) -> str:
+    simplified_text = english_text.strip()
+
     for source, target in REPLACEMENTS.items():
-        simplified = simplified.replace(source, target)
-        simplified = simplified.replace(source.title(), target.capitalize())
+        simplified_text = simplified_text.replace(source, target)
+        simplified_text = simplified_text.replace(source.title(), target.capitalize())
+
+    return simplified_text
+
+
+def simplify_english_text(english_text: str) -> str:
+    simplified = _apply_replacements(english_text)
 
     if simplified.startswith("[MOCK]"):
         simplified = simplified.replace("[MOCK]", "[PLAIN]", 1)

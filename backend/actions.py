@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TypedDict
+
 
 ACTION_VERBS = {
     "submit",
@@ -16,6 +18,13 @@ ACTION_VERBS = {
     "report",
 }
 DEADLINE_MARKERS = ("on or before", "deadline", "before", "by")
+WORD_STRIP_CHARS = " ,:;!?()[]{}\"'"
+
+
+class ActionItem(TypedDict):
+    action: str
+    deadline: str | None
+    requirement: str
 
 
 def _split_sentences(text: str) -> list[str]:
@@ -40,36 +49,51 @@ def _split_sentences(text: str) -> list[str]:
 
 
 def _contains_action_verb(sentence: str) -> bool:
+    contains_action = False
     for word in sentence.lower().split():
-        if word.strip(" ,:;!?()[]{}\"'") in ACTION_VERBS:
-            return True
+        if word.strip(WORD_STRIP_CHARS) in ACTION_VERBS:
+            contains_action = True
+            break
 
-    return False
+    return contains_action
+
+
+def _marker_start(lowered_sentence: str, marker: str) -> int | None:
+    marker_length = len(marker)
+    marker_index: int | None = None
+
+    for start_index in range(len(lowered_sentence) - marker_length + 1):
+        if lowered_sentence[start_index : start_index + marker_length] == marker:
+            marker_index = start_index
+            break
+
+    return marker_index
 
 
 def _extract_deadline(sentence: str) -> str | None:
     lowered_sentence = sentence.lower()
+    deadline: str | None = None
     for marker in DEADLINE_MARKERS:
-        index = lowered_sentence.find(marker)
-        if index >= 0:
-            return sentence[index:].strip()
+        marker_index = _marker_start(lowered_sentence, marker)
+        if marker_index is not None:
+            deadline = sentence[marker_index:].strip()
+            break
 
-    return None
+    return deadline
 
 
-def extract_actions(english_text: str) -> list[dict[str, str | None]]:
-    actions: list[dict[str, str | None]] = []
+def extract_actions(english_text: str) -> list[ActionItem]:
+    actions: list[ActionItem] = []
 
     for sentence in _split_sentences(english_text):
         if not _contains_action_verb(sentence):
             continue
 
-        actions.append(
-            {
-                "action": sentence,
-                "deadline": _extract_deadline(sentence),
-                "requirement": sentence,
-            }
-        )
+        action_item = {
+            "action": sentence,
+            "deadline": _extract_deadline(sentence),
+            "requirement": sentence,
+        }
+        actions.append(action_item)
 
     return actions

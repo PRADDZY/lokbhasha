@@ -34,6 +34,11 @@ test('backend requirements pin a patched Pillow release', async () => {
   assert.match(backendRequirements, /^Pillow==12\.1\.1$/m)
 })
 
+test('backend requirements pin a patched python-multipart release', async () => {
+  const backendRequirements = await readFile(backendRequirementsPath, 'utf8')
+  assert.match(backendRequirements, /^python-multipart==0\.0\.22$/m)
+})
+
 test('analyze package pins nested Next.js to a patched release for lingo.dev transitives', async () => {
   const analyzePackage = JSON.parse(await readFile(analyzePackagePath, 'utf8')) as {
     overrides?: Record<string, string>
