@@ -31,7 +31,7 @@ export default function Home() {
     origin: Exclude<HomeErrorOwner, null>
   ) => {
     if (origin === 'upload' && !input.file && !input.marathiText.trim()) {
-      setError('Upload a PDF or paste Marathi text before running the analysis.')
+      setError('Upload a PDF or paste source text before running the analysis.')
       setErrorOwner('upload')
       return
     }
@@ -85,12 +85,12 @@ export default function Home() {
               Powered by Lingo.dev
             </div>
             <h1 className="section-title mt-8 text-5xl leading-none md:text-7xl">
-              Marathi government circulars, clarified in canonical English.
+              Government documents, clarified and translated.
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-[var(--muted)] md:text-xl">
-              Upload a circular or try the live demo. LokBhasha recognizes official Marathi,
-              produces glossary-backed canonical English through Lingo.dev, and generates
-              translations, summaries, or action items on demand.
+              Upload a document or try the live demo. LokBhasha recognizes the source language,
+              produces glossary-backed canonical translations through Lingo.dev, and generates
+              multilingual outputs, summaries, or action items on demand.
             </p>
           </div>
         </section>

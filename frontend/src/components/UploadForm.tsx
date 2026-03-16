@@ -24,7 +24,7 @@ export function UploadForm({
           <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted)]">Upload your own</p>
           <h2 className="section-title text-4xl">Run a live document</h2>
           <p className="max-w-xl text-base leading-7 text-[var(--muted)]">
-            Use the same live system for your own PDF or pasted Marathi text. A PDF takes priority when both inputs are present.
+            Use the same live system for your own PDF or pasted source text. A PDF takes priority when both inputs are present.
           </p>
         </div>
 
@@ -49,7 +49,7 @@ export function UploadForm({
 
           <div>
             <label className="block text-sm font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
-              Paste Marathi text
+              Paste source text
             </label>
             <textarea
               placeholder="सदर अधिसूचनेन्वये अर्ज सादर करावा..."

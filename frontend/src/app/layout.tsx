@@ -14,7 +14,7 @@ const bodyFont = IBM_Plex_Sans({
 })
 
 export const metadata = {
-  title: 'LokBhasha - Government Marathi Translator',
+  title: 'LokBhasha - Multilingual Government Document Platform',
   description: 'Making government language understandable',
 }
 

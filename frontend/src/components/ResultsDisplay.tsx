@@ -131,7 +131,7 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
     .map((option) => [option.label, loadedLocales[option.value] as string] as const)
   const glossaryMatchCount = sessionResult.glossaryHits.length
   const localizationContext = sessionResult.localizationContext || getFallbackLocalizationContext()
-  const sourceLabel = sessionResult.source === 'pdf' ? 'PDF upload' : 'Pasted Marathi text'
+  const sourceLabel = sessionResult.source === 'pdf' ? 'PDF upload' : 'Pasted text'
   const configuredLocaleLabel = resolveLocaleLabel(localizationContext.sourceLocale.configured)
   const recognizedSourceLabel = localizationContext.sourceLocale.matchesConfigured
     ? `${resolveLocaleLabel(localizationContext.sourceLocale.recognized)} confirmed`
@@ -256,7 +256,7 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
 
         <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
           <article className="paper-panel rounded-[2rem] p-6 md:p-8">
-            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Original Marathi</p>
+            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Source text</p>
             <p className="mt-2 text-sm text-[var(--muted)]">The source text stays visible for glossary-backed comparison.</p>
             <div className="mt-5 rounded-[1.5rem] bg-[var(--surface-strong)] p-5 text-lg leading-9 text-[var(--ink)]">
               <LinkedParts parts={linkedState.marathiParts} activeLinkId={activeLinkId} onActivate={setActiveLinkId} />
@@ -264,8 +264,8 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
           </article>
 
           <article className="paper-panel rounded-[2rem] p-6 md:p-8">
-            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Canonical English</p>
-            <p className="mt-2 text-sm text-[var(--muted)]">What canonical English came out of the structured Lingo path.</p>
+            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Canonical translation</p>
+            <p className="mt-2 text-sm text-[var(--muted)]">The canonical output from the structured Lingo path.</p>
             <div className="mt-5 rounded-[1.5rem] bg-[var(--surface-strong)] p-5 text-lg leading-8 text-[var(--ink)]">
               <LinkedParts parts={linkedState.englishParts} activeLinkId={activeLinkId} onActivate={setActiveLinkId} />
             </div>
@@ -274,7 +274,7 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
 
         {linkedState.links.length ? (
           <p className="px-2 text-sm leading-6 text-[var(--muted)]">
-            Hover highlighted glossary terms to compare linked meanings across the original text and canonical English.
+              Hover highlighted glossary terms to compare linked meanings across the source text and canonical translation.
           </p>
         ) : null}
 
@@ -284,7 +284,7 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
               <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">What Lingo recognized</p>
               <h2 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Lingo.dev localization</h2>
               <p className="mt-3 max-w-3xl text-base leading-7 text-[var(--muted)]">
-                This request validates the source locale with Lingo, sends the canonical English stage as a structured object,
+                This request validates the source locale with Lingo, sends the canonical translation stage as a structured object,
                 and only generates additional languages when you explicitly ask for them.
               </p>
             </div>
@@ -326,7 +326,7 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
                 <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Available outputs</p>
                 <h2 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Translations, summaries, and action items</h2>
                 <p className="mt-3 max-w-2xl text-base leading-7 text-[var(--muted)]">
-                  The canonical English is ready. Select Indian languages for translation,
+                  The canonical translation is ready. Select target languages,
                   request a plain-language summary, or extract key action items from the circular.
                 </p>
               </div>
@@ -341,7 +341,7 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
             <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
               <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
                 <label className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
-                  Indian language translations
+                  Translations
                 </label>
                 {suggestedLocaleLabels.length ? (
                   <div className="mt-4 rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
@@ -387,7 +387,7 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
               <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
                 <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Plain-language summary</p>
                 <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
-                  Ask for a simpler English summary only when someone needs a more direct version.
+                  Ask for a simpler plain-language summary only when someone needs a more direct version.
                 </p>
                 <button
                   type="button"

@@ -149,8 +149,8 @@ export default function DetailsPage() {
     : 'Loading setup...'
   const lingoLocaleCoverageDetail = lingoSetup
     ? [
-        'Marathi',
-        'English',
+        'Source',
+        'Canonical',
         ...lingoSetup.selectedTargetLocales
           .slice(0, 2)
           .map((locale) => INDIAN_LANGUAGE_OPTIONS.find((option) => option.value === locale)?.label || locale),
@@ -235,8 +235,8 @@ export default function DetailsPage() {
     : 'Loading'
   const localeReadinessDetail = qualitySummary
     ? [
-        'Marathi',
-        'English',
+        'Source',
+        'Canonical',
         ...qualitySummary.selectedTargetLocales
           .slice(0, 3)
           .map((locale) => INDIAN_LANGUAGE_OPTIONS.find((option) => option.value === locale)?.label || locale),

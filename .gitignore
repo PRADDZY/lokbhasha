@@ -87,3 +87,5 @@ sqlite/lingo-import-sample-results.csv
 htmlcov/
 .pytest_cache/
 .tox/
+.vercel
+.env*.local
