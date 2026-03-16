@@ -20,12 +20,15 @@ import type {
 } from '@/lib/api'
 import { buildLinkedGlossaryState } from '@/lib/glossary-links'
 import { INDIAN_LANGUAGE_OPTIONS } from '@/lib/indian-languages'
-
-
-const RESULT_STORAGE_KEY = 'lokbhasha:last-result'
+import {
+  type DemoResultMetadata,
+  getInitialSelectedLocales,
+  writeStoredResultSession,
+} from '@/lib/result-session'
 
 type ResultsDisplayProps = {
   result: AnalysisSessionResult
+  demoMetadata?: DemoResultMetadata | null
 }
 
 type LinkedPartProps = {
@@ -115,14 +118,14 @@ function getFallbackLocalizationContext(): AnalysisLocalizationContext {
   }
 }
 
-export function ResultsDisplay({ result }: ResultsDisplayProps) {
+export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayProps) {
   const [sessionResult, setSessionResult] = useState(result)
   const [glossaryStatus, setGlossaryStatus] = useState<GlossarySyncStatus | null>(null)
   const [lingoSetup, setLingoSetup] = useState<LingoSetupSummary | null>(null)
   const [qualitySummary, setQualitySummary] = useState<QualitySummary | null>(null)
   const [baselineComparison, setBaselineComparison] = useState<AnalysisComparisonResult | null>(null)
   const [selectedLocales, setSelectedLocales] = useState<string[]>(
-    Object.keys(result.localizedText ?? {})
+    () => getInitialSelectedLocales(result, demoMetadata)
   )
   const [activeLinkId, setActiveLinkId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -162,6 +165,10 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
     sessionResult.extractionConfidence === undefined
       ? ''
       : ` - extraction confidence ${Math.round(sessionResult.extractionConfidence * 100)}%`
+  const sampleRouteLabel = demoMetadata ? `Live sample: ${demoMetadata.sampleTitle}` : 'Live request'
+  const suggestedLocaleLabels = demoMetadata?.suggestedLocales
+    ?.map((locale) => INDIAN_LANGUAGE_OPTIONS.find((option) => option.value === locale)?.label || locale)
+    ?? []
   const selectedLanguageLabel =
     selectedLocales.length > 0
       ? `${selectedLocales.length} language${selectedLocales.length === 1 ? '' : 's'} selected`
@@ -368,7 +375,7 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
 
   function persistResult(nextResult: AnalysisSessionResult) {
     setSessionResult(nextResult)
-    window.sessionStorage.setItem(RESULT_STORAGE_KEY, JSON.stringify(nextResult))
+    writeStoredResultSession(window.sessionStorage, nextResult, demoMetadata ?? undefined)
   }
 
   async function requestTranslations() {
@@ -452,12 +459,13 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
       <div className="mx-auto max-w-6xl space-y-8">
         <div className="flex flex-col justify-between gap-6 rounded-[2rem] border border-[var(--line)] bg-[rgba(255,250,241,0.65)] p-8 md:flex-row md:items-end">
           <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted)]">Lingo result</p>
+            <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted)]">What was analyzed</p>
             <h1 className="section-title mt-3 text-4xl md:text-6xl">Original and canonical view</h1>
             <p className="mt-4 max-w-2xl text-lg leading-8 text-[var(--muted)]">
               Source: {sourceLabel}
               {extractionConfidenceLabel}
             </p>
+            <p className="mt-2 text-sm leading-6 text-[var(--muted)]">{sampleRouteLabel}</p>
           </div>
           <Link
             href="/"
@@ -467,10 +475,34 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
           </Link>
         </div>
 
+        <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+          <article className="paper-panel rounded-[2rem] p-6 md:p-8">
+            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Original Marathi</p>
+            <p className="mt-2 text-sm text-[var(--muted)]">The source text stays visible for glossary-backed comparison.</p>
+            <div className="mt-5 rounded-[1.5rem] bg-[var(--surface-strong)] p-5 text-lg leading-9 text-[var(--ink)]">
+              <LinkedParts parts={linkedState.marathiParts} activeLinkId={activeLinkId} onActivate={setActiveLinkId} />
+            </div>
+          </article>
+
+          <article className="paper-panel rounded-[2rem] p-6 md:p-8">
+            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Canonical English</p>
+            <p className="mt-2 text-sm text-[var(--muted)]">What canonical English came out of the structured Lingo path.</p>
+            <div className="mt-5 rounded-[1.5rem] bg-[var(--surface-strong)] p-5 text-lg leading-8 text-[var(--ink)]">
+              <LinkedParts parts={linkedState.englishParts} activeLinkId={activeLinkId} onActivate={setActiveLinkId} />
+            </div>
+          </article>
+        </div>
+
+        {linkedState.links.length ? (
+          <p className="px-2 text-sm leading-6 text-[var(--muted)]">
+            Hover highlighted glossary terms to compare linked meanings across the original text and canonical English.
+          </p>
+        ) : null}
+
         <section className="paper-panel rounded-[2rem] p-6 md:p-8">
           <div className="flex flex-col gap-6">
             <div>
-              <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Localization context</p>
+              <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">What Lingo recognized</p>
               <h2 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Lingo.dev localization</h2>
               <p className="mt-3 max-w-3xl text-base leading-7 text-[var(--muted)]">
                 This request validates the source locale with Lingo, sends the canonical English stage as a structured object,
@@ -569,7 +601,7 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
             <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-5">
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Glossary sync</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">What glossary matched</p>
                   <h3 className="mt-2 text-2xl font-semibold text-[var(--ink)]">Lingo glossary package</h3>
                   <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--muted)]">
                     SQLite still handles fast local term detection. This panel shows whether the packaged Lingo glossary view is ready,
@@ -719,7 +751,7 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
           <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Optional follow-up outputs</p>
+                <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">What you can generate next</p>
                 <h2 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Generate only what you need</h2>
                 <p className="mt-3 max-w-2xl text-base leading-7 text-[var(--muted)]">
                   Keep the main comparison stable, then request selected Indian languages, a plain explanation, or key actions only when useful.
@@ -738,6 +770,14 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
                 <label className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
                   Select Indian languages
                 </label>
+                {suggestedLocaleLabels.length ? (
+                  <div className="mt-4 rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Suggested locales</p>
+                    <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+                      {suggestedLocaleLabels.join(', ')}
+                    </p>
+                  </div>
+                ) : null}
                 <details className="mt-4 rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)]">
                   <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-[var(--ink)]">
                     {selectedLanguageLabel}
@@ -803,30 +843,6 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
             </div>
           </div>
         </section>
-
-        <div className="grid gap-6 lg:grid-cols-2">
-          <article className="paper-panel rounded-[2rem] p-6 md:p-8">
-            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">1. Source Marathi</p>
-            <p className="mt-2 text-sm text-[var(--muted)]">Original Marathi</p>
-            <div className="mt-5 rounded-[1.5rem] bg-[var(--surface-strong)] p-5 text-lg leading-9 text-[var(--ink)]">
-              <LinkedParts parts={linkedState.marathiParts} activeLinkId={activeLinkId} onActivate={setActiveLinkId} />
-            </div>
-          </article>
-
-          <article className="paper-panel rounded-[2rem] p-6 md:p-8">
-            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">2. Lingo canonical English</p>
-            <p className="mt-2 text-sm text-[var(--muted)]">Canonical English</p>
-            <div className="mt-5 rounded-[1.5rem] bg-[var(--surface-strong)] p-5 text-lg leading-8 text-[var(--ink)]">
-              <LinkedParts parts={linkedState.englishParts} activeLinkId={activeLinkId} onActivate={setActiveLinkId} />
-            </div>
-          </article>
-        </div>
-
-        {linkedState.links.length ? (
-          <p className="px-2 text-sm leading-6 text-[var(--muted)]">
-            Hover highlighted glossary terms to compare linked meanings across the original text and canonical English.
-          </p>
-        ) : null}
 
         {sessionResult.simplifiedEnglish ? (
           <article className="rounded-[2rem] border border-[rgba(141,79,42,0.2)] bg-[rgba(141,79,42,0.08)] p-6 md:p-8">

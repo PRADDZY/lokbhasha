@@ -5,26 +5,24 @@ import { useEffect, useState } from 'react'
 
 import { ResultsDisplay } from '@/components/ResultsDisplay'
 import type { AnalysisSessionResult } from '@/lib/api'
-
-
-const RESULT_STORAGE_KEY = 'lokbhasha:last-result'
+import type { DemoResultMetadata } from '@/lib/result-session'
+import { readStoredResultSession } from '@/lib/result-session'
 
 export default function ResultPage() {
   const [result, setResult] = useState<AnalysisSessionResult | null>(null)
+  const [demoMetadata, setDemoMetadata] = useState<DemoResultMetadata | null>(null)
 
   useEffect(() => {
-    const storedValue = window.sessionStorage.getItem(RESULT_STORAGE_KEY)
-    if (!storedValue) {
-      return
-    }
-
-    setResult(JSON.parse(storedValue) as AnalysisSessionResult)
+    const storedSession = readStoredResultSession(window.sessionStorage)
+    setResult(storedSession.result)
+    setDemoMetadata(storedSession.demoMetadata)
   }, [])
 
   if (!result) {
     return (
       <main className="flex min-h-screen items-center justify-center px-4 py-10">
         <div className="paper-panel max-w-2xl rounded-[2rem] p-10 text-center">
+          {/* Show a clean empty state when session data is missing or malformed. */}
           <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted)]">No result loaded</p>
           <h1 className="section-title mt-4 text-5xl">Run an analysis first</h1>
           <p className="mt-4 text-lg leading-8 text-[var(--muted)]">
@@ -38,5 +36,5 @@ export default function ResultPage() {
     )
   }
 
-  return <ResultsDisplay result={result} />
+  return <ResultsDisplay result={result} demoMetadata={demoMetadata} />
 }

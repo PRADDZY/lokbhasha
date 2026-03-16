@@ -10,9 +10,13 @@ const homePagePath = path.join(process.cwd(), 'src', 'app', 'page.tsx')
 test('ResultsDisplay keeps the side-by-side view and shows explicit Lingo provenance for the canonical stage', async () => {
   const source = await readFile(resultsDisplayPath, 'utf8')
 
+  assert.match(source, /What was analyzed/)
+  assert.match(source, /What Lingo recognized/)
+  assert.match(source, /What glossary matched/)
+  assert.match(source, /What you can generate next/)
   assert.match(source, /Original Marathi/)
   assert.match(source, /Canonical English/)
-  assert.match(source, /Localization context/)
+  assert.match(source, /What Lingo recognized/)
   assert.match(source, /Lingo\.dev localization/)
   assert.match(source, /Recognized source/)
   assert.match(source, /Canonical stage/)
@@ -30,6 +34,7 @@ test('ResultsDisplay keeps the side-by-side view and shows explicit Lingo proven
   assert.match(source, /Glossary sync/)
   assert.match(source, /Quality check/)
   assert.match(source, /Select Indian languages/)
+  assert.match(source, /Suggested locales/)
   assert.match(source, /Generate translation/)
   assert.match(source, /Generate plain explanation/)
   assert.match(source, /Generate key actions/)
@@ -40,6 +45,8 @@ test('ResultsDisplay keeps the side-by-side view and shows explicit Lingo proven
 test('ResultsDisplay derives localization labels through named helpers instead of inline assumptions', async () => {
   const source = await readFile(resultsDisplayPath, 'utf8')
 
+  assert.match(source, /demoMetadata/)
+  assert.match(source, /getInitialSelectedLocales/)
   assert.match(source, /const extractionConfidenceLabel =/)
   assert.match(source, /const configuredLocaleLabel =/)
   assert.match(source, /const recognizedSourceLabel =/)
@@ -59,5 +66,5 @@ test('Home page copy no longer promises simplification and key actions as defaul
   assert.doesNotMatch(source, /Translation, simplification, and key actions/)
   assert.match(source, /Lingo\.dev/i)
   assert.match(source, /canonical English/i)
-  assert.match(source, /selected Indian languages/i)
+  assert.match(source, /selected locales/i)
 })
