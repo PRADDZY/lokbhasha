@@ -147,6 +147,61 @@ test('handleEnrichRequest rejects requests without canonical english text', asyn
   )
 })
 
+test('handleBaselineCompareRequest forwards Marathi and canonical English to the comparison builder', async () => {
+  const result = await analyzeRoute.handleBaselineCompareRequest(
+    {
+      marathiText: 'à¤…à¤°à¥à¤œ à¤¸à¤¾à¤¦à¤° à¤•à¤°à¤¾',
+      englishCanonical: 'Submit the application',
+    },
+    {
+      buildBaselineComparison: async (input) => {
+        assert.equal(input.marathiText, 'à¤…à¤°à¥à¤œ à¤¸à¤¾à¤¦à¤° à¤•à¤°à¤¾')
+        assert.equal(input.englishCanonical, 'Submit the application')
+        return {
+          targetLocale: 'en',
+          method: 'same_localizeText_without_glossary_hints',
+          baselineText: 'Send the application',
+          sameAsCurrent: false,
+          glossaryMatchCount: 2,
+          hintTermCount: 2,
+        }
+      },
+    }
+  )
+
+  assert.deepEqual(result, {
+    targetLocale: 'en',
+    method: 'same_localizeText_without_glossary_hints',
+    baselineText: 'Send the application',
+    sameAsCurrent: false,
+    glossaryMatchCount: 2,
+    hintTermCount: 2,
+  })
+})
+
+test('handleBaselineCompareRequest rejects requests without Marathi and canonical English text', async () => {
+  await assert.rejects(
+    () =>
+      analyzeRoute.handleBaselineCompareRequest(
+        {
+          marathiText: '   ',
+          englishCanonical: '',
+        },
+        {
+          buildBaselineComparison: async () => ({
+            targetLocale: 'en',
+            method: 'same_localizeText_without_glossary_hints',
+            baselineText: 'unused',
+            sameAsCurrent: true,
+            glossaryMatchCount: 0,
+            hintTermCount: 0,
+          }),
+        }
+      ),
+    /Provide Marathi text and canonical English before running the baseline comparison\./
+  )
+})
+
 test('getAnalyzeErrorStatus maps request validation failures to bad request', () => {
   assert.equal(
     analyzeRoute.getAnalyzeErrorStatus(new Error('Upload a PDF or provide Marathi text before analyzing.')),
@@ -160,6 +215,12 @@ test('getAnalyzeErrorStatus maps request validation failures to bad request', ()
   )
   assert.equal(
     analyzeRoute.getAnalyzeErrorStatus(new Error('Provide canonical English text before generating enrichments.')),
+    400
+  )
+  assert.equal(
+    analyzeRoute.getAnalyzeErrorStatus(
+      new Error('Provide Marathi text and canonical English before running the baseline comparison.')
+    ),
     400
   )
 })

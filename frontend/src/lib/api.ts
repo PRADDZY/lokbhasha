@@ -1,9 +1,12 @@
 import type {
+  AnalysisComparisonRequest,
+  AnalysisComparisonResult,
   AnalysisCoreResult,
   AnalysisEnrichmentRequest,
   AnalysisEnrichmentResult,
   GlossarySyncStatus,
   LingoSetupSummary,
+  QualitySummary,
 } from './types'
 
 
@@ -29,8 +32,18 @@ function getLingoSetupApiUrl(): string {
   return `${getApiBaseUrl()}/lingo-setup`
 }
 
+function getQualitySummaryApiUrl(): string {
+  return `${getApiBaseUrl()}/quality-summary`
+}
+
+function getBaselineCompareApiUrl(): string {
+  return `${getApiBaseUrl()}/quality/baseline-compare`
+}
+
 export type {
   ActionItem,
+  AnalysisComparisonRequest,
+  AnalysisComparisonResult,
   AnalysisCoreResult,
   AnalysisEnrichmentRequest,
   AnalysisEnrichmentResult,
@@ -39,6 +52,7 @@ export type {
   GlossarySyncStatus,
   LingoGlossaryEntry,
   LingoSetupSummary,
+  QualitySummary,
 } from './types'
 
 export async function analyzeDocument(input: {
@@ -107,4 +121,39 @@ export async function fetchLingoSetup(): Promise<LingoSetupSummary> {
   }
 
   return payload as LingoSetupSummary
+}
+
+export async function fetchQualitySummary(): Promise<QualitySummary> {
+  const response = await fetch(getQualitySummaryApiUrl(), {
+    method: 'GET',
+  })
+
+  const payload = (await response.json().catch(() => null)) as QualitySummary | { detail?: string } | null
+  if (!response.ok) {
+    throw new Error((payload as { detail?: string } | null)?.detail || 'Analysis failed.')
+  }
+
+  return payload as QualitySummary
+}
+
+export async function runBaselineComparison(
+  input: AnalysisComparisonRequest
+): Promise<AnalysisComparisonResult> {
+  const response = await fetch(getBaselineCompareApiUrl(), {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  })
+
+  const payload = (await response.json().catch(() => null)) as
+    | AnalysisComparisonResult
+    | { detail?: string }
+    | null
+  if (!response.ok) {
+    throw new Error((payload as { detail?: string } | null)?.detail || 'Analysis failed.')
+  }
+
+  return payload as AnalysisComparisonResult
 }

@@ -2,8 +2,20 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import * as api from '../src/lib/api'
-import { analyzeDocument, enrichDocument, fetchGlossaryStatus } from '../src/lib/api'
-import type { AnalysisCoreResult, AnalysisEnrichmentResult, GlossarySyncStatus } from '../src/lib/types'
+import {
+  analyzeDocument,
+  enrichDocument,
+  fetchGlossaryStatus,
+  fetchQualitySummary,
+  runBaselineComparison,
+} from '../src/lib/api'
+import type {
+  AnalysisComparisonResult,
+  AnalysisCoreResult,
+  AnalysisEnrichmentResult,
+  GlossarySyncStatus,
+  QualitySummary,
+} from '../src/lib/types'
 
 
 function buildExpectedCoreResult(): AnalysisCoreResult {
@@ -153,4 +165,117 @@ test('fetchGlossaryStatus reads glossary sync metadata from NEXT_PUBLIC_API_BASE
 
 test('frontend api exports fetchLingoSetup for the read-only Lingo setup panel', async () => {
   assert.equal(typeof api.fetchLingoSetup, 'function')
+})
+
+function buildExpectedQualitySummary(): QualitySummary {
+  return {
+    sourceLocale: 'mr',
+    canonicalTargetLocale: 'en',
+    selectedTargetLocales: ['as', 'bn', 'gu', 'hi'],
+    engineStatus: 'default_org_engine',
+    layerStates: {
+      glossary: 'ready',
+      brandVoices: 'not_surfaced',
+      instructions: 'not_surfaced',
+      aiReviewers: 'not_surfaced',
+    },
+    glossaryStatus: {
+      totalTerms: 249048,
+      syncState: 'ready',
+      lastSyncedAt: '2026-03-16T12:00:00.000Z',
+      fallbackHintsEnabled: true,
+    },
+    baselineComparison: {
+      available: true,
+      method: 'same_localizeText_without_glossary_hints',
+    },
+  }
+}
+
+function buildExpectedComparisonResult(): AnalysisComparisonResult {
+  return {
+    targetLocale: 'en',
+    method: 'same_localizeText_without_glossary_hints',
+    baselineText: 'Send the application',
+    sameAsCurrent: false,
+    glossaryMatchCount: 2,
+    hintTermCount: 2,
+  }
+}
+
+test('fetchQualitySummary reads quality metadata from NEXT_PUBLIC_API_BASE_URL/quality-summary', async () => {
+  const originalBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+  const originalFetch = globalThis.fetch
+  const expected = buildExpectedQualitySummary()
+  let requestedUrl = ''
+
+  process.env.NEXT_PUBLIC_API_BASE_URL = 'https://lokbhasha-analyze.onrender.com'
+  globalThis.fetch = async (input) => {
+    requestedUrl = String(input)
+    return new Response(JSON.stringify(expected), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }
+
+  try {
+    const result = await fetchQualitySummary()
+    assert.equal(requestedUrl, 'https://lokbhasha-analyze.onrender.com/quality-summary')
+    assert.deepEqual(result, expected)
+  } finally {
+    if (originalBaseUrl === undefined) {
+      delete process.env.NEXT_PUBLIC_API_BASE_URL
+    } else {
+      process.env.NEXT_PUBLIC_API_BASE_URL = originalBaseUrl
+    }
+    globalThis.fetch = originalFetch
+  }
+})
+
+test('runBaselineComparison posts Marathi text and canonical English to NEXT_PUBLIC_API_BASE_URL/quality/baseline-compare', async () => {
+  const originalBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+  const originalFetch = globalThis.fetch
+  const expected = buildExpectedComparisonResult()
+  const requests: Array<{ url: string; method: string; contentType: string | null; body: string }> = []
+
+  process.env.NEXT_PUBLIC_API_BASE_URL = 'https://lokbhasha-analyze.onrender.com'
+  globalThis.fetch = async (input, init) => {
+    requests.push({
+      url: String(input),
+      method: init?.method || 'GET',
+      contentType: new Headers(init?.headers).get('content-type'),
+      body: String(init?.body || ''),
+    })
+    return new Response(JSON.stringify(expected), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    })
+  }
+
+  try {
+    const result = await runBaselineComparison({
+      marathiText: 'अर्ज सादर करा',
+      englishCanonical: 'Submit the application',
+    })
+
+    assert.deepEqual(requests, [
+      {
+        url: 'https://lokbhasha-analyze.onrender.com/quality/baseline-compare',
+        method: 'POST',
+        contentType: 'application/json',
+        body: JSON.stringify({
+          marathiText: 'अर्ज सादर करा',
+          englishCanonical: 'Submit the application',
+        }),
+      },
+    ])
+    assert.deepEqual(result, expected)
+  } finally {
+    if (originalBaseUrl === undefined) {
+      delete process.env.NEXT_PUBLIC_API_BASE_URL
+    } else {
+      process.env.NEXT_PUBLIC_API_BASE_URL = originalBaseUrl
+    }
+    globalThis.fetch = originalFetch
+  }
 })

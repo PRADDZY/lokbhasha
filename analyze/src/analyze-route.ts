@@ -1,10 +1,18 @@
 import { GlossaryDatabaseError, LingoConfigurationError } from './errors'
-import type { AnalysisCoreResult, AnalysisEnrichmentRequest, AnalysisEnrichmentResult } from './types'
+import type {
+  AnalysisComparisonRequest,
+  AnalysisComparisonResult,
+  AnalysisCoreResult,
+  AnalysisEnrichmentRequest,
+  AnalysisEnrichmentResult,
+} from './types'
 
 
 export const ANALYZE_REQUEST_ERROR_MESSAGE = 'Upload a PDF or provide Marathi text before analyzing.'
 export const ENRICH_SELECTION_ERROR_MESSAGE = 'Request at least one optional output before generating enrichments.'
 export const ENRICH_TEXT_ERROR_MESSAGE = 'Provide canonical English text before generating enrichments.'
+export const BASELINE_COMPARE_REQUEST_ERROR_MESSAGE =
+  'Provide Marathi text and canonical English before running the baseline comparison.'
 
 type AnalyzeRouteDependencies = {
   analyzeMarathiDocument: (input: {
@@ -19,13 +27,18 @@ type EnrichRouteDependencies = {
   generateAnalysisEnrichment: (input: AnalysisEnrichmentRequest) => Promise<AnalysisEnrichmentResult>
 }
 
+type BaselineCompareRouteDependencies = {
+  buildBaselineComparison: (input: AnalysisComparisonRequest) => Promise<AnalysisComparisonResult>
+}
+
 export function getAnalyzeErrorStatus(error: unknown): number {
   if (
     error instanceof Error &&
     (
       error.message === ANALYZE_REQUEST_ERROR_MESSAGE ||
       error.message === ENRICH_SELECTION_ERROR_MESSAGE ||
-      error.message === ENRICH_TEXT_ERROR_MESSAGE
+      error.message === ENRICH_TEXT_ERROR_MESSAGE ||
+      error.message === BASELINE_COMPARE_REQUEST_ERROR_MESSAGE
     )
   ) {
     return 400
@@ -106,5 +119,22 @@ export async function handleEnrichRequest(
     requestedLocales,
     includePlainExplanation,
     includeActions,
+  })
+}
+
+export async function handleBaselineCompareRequest(
+  body: Partial<AnalysisComparisonRequest> | null | undefined,
+  dependencies: BaselineCompareRouteDependencies
+): Promise<AnalysisComparisonResult> {
+  const marathiText = String(body?.marathiText || '').trim()
+  const englishCanonical = String(body?.englishCanonical || '').trim()
+
+  if (!marathiText || !englishCanonical) {
+    throw new Error(BASELINE_COMPARE_REQUEST_ERROR_MESSAGE)
+  }
+
+  return dependencies.buildBaselineComparison({
+    marathiText,
+    englishCanonical,
   })
 }

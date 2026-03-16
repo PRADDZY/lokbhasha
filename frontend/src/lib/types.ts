@@ -86,6 +86,45 @@ export type LingoSetupSummary = {
   }
 }
 
+export type AnalysisComparisonMethod = 'same_localizeText_without_glossary_hints'
+
+export type AnalysisComparisonRequest = {
+  marathiText: string
+  englishCanonical: string
+}
+
+export type AnalysisComparisonResult = {
+  targetLocale: 'en'
+  method: AnalysisComparisonMethod
+  baselineText: string
+  sameAsCurrent: boolean
+  glossaryMatchCount: number
+  hintTermCount: number
+}
+
+export type QualitySummary = {
+  sourceLocale: string
+  canonicalTargetLocale: string
+  selectedTargetLocales: string[]
+  engineStatus: LingoSetupSummary['engine']['status']
+  layerStates: {
+    glossary: GlossarySyncState
+    brandVoices: LingoSetupLayerStatus
+    instructions: LingoSetupLayerStatus
+    aiReviewers: LingoSetupLayerStatus
+  }
+  glossaryStatus: {
+    totalTerms: number
+    syncState: GlossarySyncState
+    lastSyncedAt: string | null
+    fallbackHintsEnabled: boolean
+  }
+  baselineComparison: {
+    available: true
+    method: AnalysisComparisonMethod
+  }
+}
+
 export type ActionItem = {
   action: string
   deadline: string | null
