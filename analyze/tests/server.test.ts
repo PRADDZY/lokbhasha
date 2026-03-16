@@ -2,10 +2,12 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import type {
+  AnalysisComparisonResult,
   AnalysisCoreResult,
   AnalysisEnrichmentResult,
   GlossarySyncStatus,
   LingoSetupSummary,
+  QualitySummary,
 } from '../src/types'
 import { buildAnalyzeServer, getStartupFailureMessage } from '../src/server'
 
@@ -100,6 +102,42 @@ function buildExpectedLingoSetup(): LingoSetupSummary {
         activeInRuntime: false,
       },
     },
+  }
+}
+
+function buildExpectedQualitySummary(): QualitySummary {
+  return {
+    sourceLocale: 'mr',
+    canonicalTargetLocale: 'en',
+    selectedTargetLocales: ['as', 'bn', 'gu', 'hi'],
+    engineStatus: 'default_org_engine',
+    layerStates: {
+      glossary: 'ready',
+      brandVoices: 'not_surfaced',
+      instructions: 'not_surfaced',
+      aiReviewers: 'not_surfaced',
+    },
+    glossaryStatus: {
+      totalTerms: 249048,
+      syncState: 'ready',
+      lastSyncedAt: '2026-03-16T12:00:00.000Z',
+      fallbackHintsEnabled: true,
+    },
+    baselineComparison: {
+      available: true,
+      method: 'same_localizeText_without_glossary_hints',
+    },
+  }
+}
+
+function buildExpectedComparisonResult(): AnalysisComparisonResult {
+  return {
+    targetLocale: 'en',
+    method: 'same_localizeText_without_glossary_hints',
+    baselineText: 'Send the application',
+    sameAsCurrent: false,
+    glossaryMatchCount: 2,
+    hintTermCount: 2,
   }
 }
 
@@ -226,6 +264,25 @@ test('buildAnalyzeServer exposes a read-only lingo setup summary for the result 
   await server.close()
 })
 
+test('buildAnalyzeServer exposes a quality summary for the result view', async () => {
+  const server = buildAnalyzeServer({
+    handleAnalyzeRequest: async () => buildExpectedCoreResult(),
+    handleEnrichRequest: async () => buildExpectedEnrichmentResult(),
+    handleGlossaryStatusRequest: async () => buildExpectedGlossaryStatus(),
+    handleLingoSetupRequest: async () => buildExpectedLingoSetup(),
+    handleQualitySummaryRequest: async () => buildExpectedQualitySummary(),
+  })
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/quality-summary',
+  })
+
+  assert.equal(response.statusCode, 200)
+  assert.deepEqual(response.json(), buildExpectedQualitySummary())
+  await server.close()
+})
+
 test('buildAnalyzeServer converts multipart text requests into FormData for analysis', async () => {
   let receivedText = ''
   const server = buildAnalyzeServer({
@@ -318,6 +375,53 @@ test('buildAnalyzeServer forwards enrich requests as JSON payloads', async () =>
     includePlainExplanation: false,
     includeActions: true,
   })
+  await server.close()
+})
+
+test('buildAnalyzeServer explains how to use the baseline comparison endpoint on GET requests', async () => {
+  const server = buildAnalyzeServer({
+    handleAnalyzeRequest: async () => buildExpectedCoreResult(),
+    handleEnrichRequest: async () => buildExpectedEnrichmentResult(),
+  })
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/quality/baseline-compare',
+  })
+
+  assert.equal(response.statusCode, 405)
+  assert.deepEqual(response.json(), {
+    detail: 'Use POST /quality/baseline-compare with Marathi text and canonical English.',
+  })
+  await server.close()
+})
+
+test('buildAnalyzeServer forwards baseline comparison requests as JSON payloads', async () => {
+  let receivedBody: Record<string, unknown> | null = null
+  const server = buildAnalyzeServer({
+    handleAnalyzeRequest: async () => buildExpectedCoreResult(),
+    handleEnrichRequest: async () => buildExpectedEnrichmentResult(),
+    handleBaselineCompareRequest: async (body) => {
+      receivedBody = body as Record<string, unknown>
+      return buildExpectedComparisonResult()
+    },
+  })
+
+  const response = await server.inject({
+    method: 'POST',
+    url: '/quality/baseline-compare',
+    payload: {
+      marathiText: 'à¤…à¤°à¥à¤œ à¤¸à¤¾à¤¦à¤° à¤•à¤°à¤¾',
+      englishCanonical: 'Submit the application',
+    },
+  })
+
+  assert.equal(response.statusCode, 200)
+  assert.deepEqual(receivedBody, {
+    marathiText: 'à¤…à¤°à¥à¤œ à¤¸à¤¾à¤¦à¤° à¤•à¤°à¤¾',
+    englishCanonical: 'Submit the application',
+  })
+  assert.deepEqual(response.json(), buildExpectedComparisonResult())
   await server.close()
 })
 

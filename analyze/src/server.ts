@@ -5,15 +5,29 @@ import path from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import { analyzeMarathiDocument, generateAnalysisEnrichment } from './analysis'
-import { getAnalyzeErrorStatus, handleAnalyzeFormData, handleEnrichRequest } from './analyze-route'
-import { getAllowedOrigins, getAnalyzePort, getGlossaryDatabasePath } from './config'
+import { analyzeMarathiDocument, buildBaselineComparison, generateAnalysisEnrichment } from './analysis'
+import {
+  getAnalyzeErrorStatus,
+  handleAnalyzeFormData,
+  handleBaselineCompareRequest,
+  handleEnrichRequest,
+} from './analyze-route'
+import { getAllowedOrigins, getAnalyzePort, getGlossaryDatabasePath, getGlossarySyncSnapshotPath } from './config'
 import { extractPdfText } from './extraction'
 import { detectGlossaryHits } from './glossary'
 import { getGlossarySyncStatus } from './glossary-sync'
 import { getLingoSetupSummary } from './lingo-setup'
+import { getQualitySummary } from './quality-summary'
 import { createLingoClient } from './lingo'
-import type { AnalysisCoreResult, AnalysisEnrichmentResult, GlossarySyncStatus, LingoSetupSummary } from './types'
+import type {
+  AnalysisComparisonRequest,
+  AnalysisComparisonResult,
+  AnalysisCoreResult,
+  AnalysisEnrichmentResult,
+  GlossarySyncStatus,
+  LingoSetupSummary,
+  QualitySummary,
+} from './types'
 
 
 type AnalyzeRequestHandler = (formData: FormData) => Promise<AnalysisCoreResult>
@@ -25,15 +39,21 @@ type EnrichRequestHandler = (
     includeActions?: boolean
   } | null | undefined
 ) => Promise<AnalysisEnrichmentResult>
+type BaselineCompareRequestHandler = (
+  body: Partial<AnalysisComparisonRequest> | null | undefined
+) => Promise<AnalysisComparisonResult>
 
 type GlossaryStatusRequestHandler = () => Promise<GlossarySyncStatus> | GlossarySyncStatus
 type LingoSetupRequestHandler = () => Promise<LingoSetupSummary> | LingoSetupSummary
+type QualitySummaryRequestHandler = () => Promise<QualitySummary> | QualitySummary
 
 type AnalyzeServerDependencies = {
   handleAnalyzeRequest?: AnalyzeRequestHandler
   handleEnrichRequest?: EnrichRequestHandler
+  handleBaselineCompareRequest?: BaselineCompareRequestHandler
   handleGlossaryStatusRequest?: GlossaryStatusRequestHandler
   handleLingoSetupRequest?: LingoSetupRequestHandler
+  handleQualitySummaryRequest?: QualitySummaryRequestHandler
 }
 
 async function requestToFormData(request: FastifyRequest): Promise<FormData> {
@@ -102,6 +122,20 @@ export function createEnrichRequestHandler(): EnrichRequestHandler {
     })
 }
 
+export function createBaselineCompareRequestHandler(): BaselineCompareRequestHandler {
+  const lingoClient = createLingoClient()
+
+  return (body) =>
+    handleBaselineCompareRequest(body, {
+      buildBaselineComparison: (input) =>
+        buildBaselineComparison(input, {
+          detectGlossaryHits: (text) =>
+            detectGlossaryHits(text, { databasePath: getGlossaryDatabasePath() }),
+          lingoClient,
+        }),
+    })
+}
+
 export function createGlossaryStatusRequestHandler(): GlossaryStatusRequestHandler {
   return () => getGlossarySyncStatus({
     databasePath: getGlossaryDatabasePath(),
@@ -115,14 +149,22 @@ export function createLingoSetupRequestHandler(): LingoSetupRequestHandler {
     })
 }
 
+export function createQualitySummaryRequestHandler(): QualitySummaryRequestHandler {
+  return () =>
+    getQualitySummary({
+      databasePath: getGlossaryDatabasePath(),
+      snapshotPath: getGlossarySyncSnapshotPath(),
+    })
+}
+
 export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {}): FastifyInstance {
   const server = Fastify({ logger: false })
-  const handleAnalyzeRequest = dependencies.handleAnalyzeRequest ?? createAnalyzeRequestHandler()
-  const enrichRequestHandler = dependencies.handleEnrichRequest ?? createEnrichRequestHandler()
-  const glossaryStatusRequestHandler =
-    dependencies.handleGlossaryStatusRequest ?? createGlossaryStatusRequestHandler()
-  const lingoSetupRequestHandler =
-    dependencies.handleLingoSetupRequest ?? createLingoSetupRequestHandler()
+  let analyzeRequestHandler = dependencies.handleAnalyzeRequest
+  let enrichRequestHandler = dependencies.handleEnrichRequest
+  let baselineCompareRequestHandler = dependencies.handleBaselineCompareRequest
+  let glossaryStatusRequestHandler = dependencies.handleGlossaryStatusRequest
+  let lingoSetupRequestHandler = dependencies.handleLingoSetupRequest
+  let qualitySummaryRequestHandler = dependencies.handleQualitySummaryRequest
 
   server.register(cors, {
     origin: getAllowedOrigins(),
@@ -144,8 +186,15 @@ export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {})
     })
   })
 
+  server.get('/quality/baseline-compare', async (_, reply) => {
+    return reply.code(405).send({
+      detail: 'Use POST /quality/baseline-compare with Marathi text and canonical English.',
+    })
+  })
+
   server.get('/glossary-status', async (_, reply) => {
     try {
+      glossaryStatusRequestHandler ??= createGlossaryStatusRequestHandler()
       const result = await glossaryStatusRequestHandler()
       return reply.send(result)
     } catch (error) {
@@ -161,7 +210,24 @@ export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {})
 
   server.get('/lingo-setup', async (_, reply) => {
     try {
+      lingoSetupRequestHandler ??= createLingoSetupRequestHandler()
       const result = await lingoSetupRequestHandler()
+      return reply.send(result)
+    } catch (error) {
+      const status = getAnalyzeErrorStatus(error)
+      const message = status === 500
+        ? 'Analysis failed.'
+        : error instanceof Error
+          ? error.message
+          : 'Analysis failed.'
+      return reply.code(status).send({ detail: message })
+    }
+  })
+
+  server.get('/quality-summary', async (_, reply) => {
+    try {
+      qualitySummaryRequestHandler ??= createQualitySummaryRequestHandler()
+      const result = await qualitySummaryRequestHandler()
       return reply.send(result)
     } catch (error) {
       const status = getAnalyzeErrorStatus(error)
@@ -176,8 +242,9 @@ export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {})
 
   server.post('/analyze', async (request, reply) => {
     try {
+      analyzeRequestHandler ??= createAnalyzeRequestHandler()
       const formData = await requestToFormData(request)
-      const result = await handleAnalyzeRequest(formData)
+      const result = await analyzeRequestHandler(formData)
       return reply.send(result)
     } catch (error) {
       const status = getAnalyzeErrorStatus(error)
@@ -192,6 +259,7 @@ export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {})
 
   server.post('/enrich', async (request, reply) => {
     try {
+      enrichRequestHandler ??= createEnrichRequestHandler()
       const result = await enrichRequestHandler(
         (request.body as {
           englishCanonical?: string
@@ -199,6 +267,24 @@ export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {})
           includePlainExplanation?: boolean
           includeActions?: boolean
         } | null) ?? null
+      )
+      return reply.send(result)
+    } catch (error) {
+      const status = getAnalyzeErrorStatus(error)
+      const message = status === 500
+        ? 'Analysis failed.'
+        : error instanceof Error
+          ? error.message
+          : 'Analysis failed.'
+      return reply.code(status).send({ detail: message })
+    }
+  })
+
+  server.post('/quality/baseline-compare', async (request, reply) => {
+    try {
+      baselineCompareRequestHandler ??= createBaselineCompareRequestHandler()
+      const result = await baselineCompareRequestHandler(
+        (request.body as Partial<AnalysisComparisonRequest> | null) ?? null
       )
       return reply.send(result)
     } catch (error) {

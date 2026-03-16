@@ -1,6 +1,8 @@
 import { extractActions, simplifyEnglishText } from './english'
 import { buildFallbackGlossaryHints } from './terminology'
 import type {
+  AnalysisComparisonRequest,
+  AnalysisComparisonResult,
   AnalysisCoreResult,
   AnalysisEnrichmentRequest,
   AnalysisEnrichmentResult,
@@ -22,6 +24,11 @@ type AnalyzeDependencies = {
 }
 
 type EnrichmentDependencies = {
+  lingoClient: LingoClient
+}
+
+type BaselineComparisonDependencies = {
+  detectGlossaryHits: (text: string) => GlossaryHit[]
   lingoClient: LingoClient
 }
 
@@ -80,4 +87,26 @@ export async function generateAnalysisEnrichment(
   }
 
   return result
+}
+
+export async function buildBaselineComparison(
+  input: AnalysisComparisonRequest,
+  dependencies: BaselineComparisonDependencies
+): Promise<AnalysisComparisonResult> {
+  const glossaryHits = dependencies.detectGlossaryHits(input.marathiText)
+  const fallbackGlossaryHints = buildFallbackGlossaryHints(glossaryHits)
+  const baselineText = await dependencies.lingoClient.localizeText(input.marathiText, {
+    sourceLocale: 'mr',
+    targetLocale: 'en',
+    fast: true,
+  })
+
+  return {
+    targetLocale: 'en',
+    method: 'same_localizeText_without_glossary_hints',
+    baselineText,
+    sameAsCurrent: baselineText === input.englishCanonical,
+    glossaryMatchCount: glossaryHits.length,
+    hintTermCount: Object.keys(fallbackGlossaryHints).length,
+  }
 }
