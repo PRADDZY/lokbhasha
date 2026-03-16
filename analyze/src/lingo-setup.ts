@@ -1,10 +1,29 @@
-import { getConfiguredTargetLocales, getLingoEngineId } from './config'
+import {
+  getConfiguredBrandVoiceCount,
+  getConfiguredInstructionCount,
+  getConfiguredScorerCount,
+  getConfiguredTargetLocales,
+  getLingoEngineId,
+} from './config'
 import { getGlossarySyncStatus } from './glossary-sync'
-import type { LingoSetupSummary } from './types'
+import type { LingoSetupLayerStatus, LingoSetupSummary } from './types'
 
 
 const DEFAULT_ENGINE_NOTE = 'Requests use the organization default Lingo setup.'
 const CONFIGURED_ENGINE_NOTE = 'Requests use the configured Lingo engine id.'
+
+function buildLayerState<T extends string>(
+  supportedShape: T,
+  configuredCount: number
+): { status: LingoSetupLayerStatus; supportedShape: T; configuredCount: number; activeInRuntime: boolean } {
+  const active = configuredCount > 0
+  return {
+    status: active ? 'ready' : 'not_surfaced',
+    supportedShape,
+    configuredCount,
+    activeInRuntime: active,
+  }
+}
 
 export function getLingoSetupSummary(options?: {
   databasePath?: string
@@ -53,25 +72,12 @@ export function getLingoSetupSummary(options?: {
         remoteGlossaryTermCount: glossaryStatus.remoteGlossaryTermCount,
         fallbackMode: glossaryStatus.fallbackMode,
       },
-      brandVoices: {
-        status: 'not_surfaced',
-        supportedShape: 'one_per_target_locale',
-        configuredCount: 0,
-        activeInRuntime: false,
-      },
+      brandVoices: buildLayerState('one_per_target_locale', getConfiguredBrandVoiceCount()),
       instructions: {
-        status: 'not_surfaced',
-        supportedShape: 'many_per_locale',
+        ...buildLayerState('many_per_locale', getConfiguredInstructionCount()),
         wildcardSupported: true,
-        configuredCount: 0,
-        activeInRuntime: false,
       },
-      aiReviewers: {
-        status: 'not_surfaced',
-        supportedShape: 'async_per_locale_pair',
-        configuredCount: 0,
-        activeInRuntime: false,
-      },
+      aiReviewers: buildLayerState('async_per_locale_pair', getConfiguredScorerCount()),
     },
   }
 }

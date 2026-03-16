@@ -180,6 +180,45 @@ export default async function GlossaryDemoPage() {
         </section>
 
         <section className="paper-panel rounded-[2rem] p-6 md:p-8">
+          <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Engine layers</p>
+          <h2 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Brand voices, instructions and reviewers</h2>
+          <p className="mt-3 max-w-3xl text-base leading-7 text-[var(--muted)]">
+            These layers are configured on the Lingo dashboard and applied automatically by the SDK during translation.
+            Status reflects the currently deployed environment configuration.
+          </p>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Brand voices</p>
+              <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
+                {lingoSetup?.layers.brandVoices.status === 'ready' ? 'Active' : 'Not configured'}
+              </p>
+              <p className="mt-2 text-sm text-[var(--muted)]">
+                {lingoSetup?.layers.brandVoices.configuredCount ?? 0} configured
+              </p>
+            </div>
+            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Custom instructions</p>
+              <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
+                {lingoSetup?.layers.instructions.status === 'ready' ? 'Active' : 'Not configured'}
+              </p>
+              <p className="mt-2 text-sm text-[var(--muted)]">
+                {lingoSetup?.layers.instructions.configuredCount ?? 0} configured
+              </p>
+            </div>
+            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">AI reviewers</p>
+              <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
+                {lingoSetup?.layers.aiReviewers.status === 'ready' ? 'Active' : 'Not configured'}
+              </p>
+              <p className="mt-2 text-sm text-[var(--muted)]">
+                {lingoSetup?.layers.aiReviewers.configuredCount ?? 0} configured
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="paper-panel rounded-[2rem] p-6 md:p-8">
           <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Preview entries</p>
           <h2 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Prepared terms</h2>
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">

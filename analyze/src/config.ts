@@ -86,6 +86,24 @@ export function getLingoEngineId(): string | null {
   return configured || null
 }
 
+export function getConfiguredBrandVoiceCount(): number {
+  const configured = (process.env.LINGO_BRAND_VOICE_COUNT || '0').trim()
+  const parsed = Number.parseInt(configured, 10)
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
+}
+
+export function getConfiguredInstructionCount(): number {
+  const configured = (process.env.LINGO_INSTRUCTION_COUNT || '0').trim()
+  const parsed = Number.parseInt(configured, 10)
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
+}
+
+export function getConfiguredScorerCount(): number {
+  const configured = (process.env.LINGO_SCORER_COUNT || '0').trim()
+  const parsed = Number.parseInt(configured, 10)
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 0
+}
+
 export function getConfiguredTargetLocales(): string[] {
   const configured = (process.env.LINGODOTDEV_TARGET_LOCALES || '').trim()
   if (!configured) {
