@@ -91,6 +91,7 @@ Analyze service variables:
 - `EXTRACT_BACKEND_URL`
 - `CORS_ALLOWED_ORIGINS`
 - `LINGODOTDEV_API_KEY`
+- `LINGODOTDEV_ENGINE_ID` (optional)
 - `LINGODOTDEV_TARGET_LOCALES`
 - `GLOSSARY_DB_PATH`
 
@@ -169,6 +170,7 @@ The frontend is a pure client app. Set:
 
 Use the public `lokbhasha-analyze` service from `render.yaml`. It needs:
 - `LINGODOTDEV_API_KEY`
+- `LINGODOTDEV_ENGINE_ID` (optional)
 - `LINGODOTDEV_TARGET_LOCALES`
 - `CORS_ALLOWED_ORIGINS`
 - `GLOSSARY_DB_PATH`

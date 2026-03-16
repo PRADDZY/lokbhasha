@@ -39,15 +39,36 @@ export type GlossarySyncStatus = {
 
 export type LingoSetupLayerStatus = 'ready' | 'not_surfaced'
 
+export type LingoEngineSelectionMode = 'implicit_default' | 'explicit'
+
+export type AnalysisLocalizationContext = {
+  provider: 'lingo.dev'
+  engineSelectionMode: LingoEngineSelectionMode
+  engineId: string | null
+  sourceLocale: {
+    configured: 'mr'
+    recognized: string
+    matchesConfigured: boolean
+  }
+  canonicalStage: {
+    requestShape: 'structured_object'
+    method: 'localizeObject'
+    sourceLocale: 'mr'
+    targetLocale: 'en'
+    fast: true
+    glossaryMode: 'fallback_request_hints' | 'none'
+  }
+}
+
 export type LingoSetupSummary = {
   sourceLocale: string
   canonicalTargetLocale: string
   selectedTargetLocales: string[]
-  runtimePath: ['mr->en', 'en->selectedLocales']
+  runtimePath: ['recognize', 'mr->en', 'en->selectedLocales']
   engine: {
-    selectionMode: 'implicit_default'
-    engineId: null
-    status: 'default_org_engine'
+    selectionMode: LingoEngineSelectionMode
+    engineId: string | null
+    status: 'default_org_engine' | 'configured_engine'
     note: string
   }
   layers: {
@@ -86,7 +107,7 @@ export type LingoSetupSummary = {
   }
 }
 
-export type AnalysisComparisonMethod = 'same_localizeText_without_glossary_hints'
+export type AnalysisComparisonMethod = 'same_localizeObject_without_glossary_hints'
 
 export type AnalysisComparisonRequest = {
   marathiText: string
@@ -139,6 +160,7 @@ export type AnalysisCoreResult = {
   extractionConfidence?: number
   glossaryHits: GlossaryHit[]
   englishCanonical: string
+  localizationContext: AnalysisLocalizationContext
 }
 
 export type AnalysisEnrichmentRequest = {

@@ -9,16 +9,34 @@ import type { AnalysisCoreResult, AnalysisEnrichmentResult } from '../src/types'
 function buildExpectedCoreResult(): AnalysisCoreResult {
   return {
     source: 'text',
-    marathiText: 'अर्ज सादर करा',
+    marathiText: 'arj sadar kara',
     glossaryHits: [],
     englishCanonical: 'Submit the application',
+    localizationContext: {
+      provider: 'lingo.dev',
+      engineSelectionMode: 'implicit_default',
+      engineId: null,
+      sourceLocale: {
+        configured: 'mr',
+        recognized: 'mr',
+        matchesConfigured: true,
+      },
+      canonicalStage: {
+        requestShape: 'structured_object',
+        method: 'localizeObject',
+        sourceLocale: 'mr',
+        targetLocale: 'en',
+        fast: true,
+        glossaryMode: 'fallback_request_hints',
+      },
+    },
   }
 }
 
 function buildExpectedEnrichmentResult(): AnalysisEnrichmentResult {
   return {
     localizedText: {
-      hi: 'आवेदन जमा करें',
+      hi: 'Hindi output',
     },
     simplifiedEnglish: 'Submit the application',
     actions: [],
@@ -27,13 +45,13 @@ function buildExpectedEnrichmentResult(): AnalysisEnrichmentResult {
 
 test('handleAnalyzeFormData analyzes pasted Marathi text', async () => {
   const formData = new FormData()
-  formData.set('marathiText', 'अर्ज सादर करा')
+  formData.set('marathiText', 'arj sadar kara')
 
   const expected = buildExpectedCoreResult()
   const result = await analyzeRoute.handleAnalyzeFormData(formData, {
     analyzeMarathiDocument: async (input) => {
       assert.equal(input.source, 'text')
-      assert.equal(input.marathiText, 'अर्ज सादर करा')
+      assert.equal(input.marathiText, 'arj sadar kara')
       return expected
     },
     extractPdfText: async () => {
@@ -52,18 +70,18 @@ test('handleAnalyzeFormData extracts pdf content before analysis', async () => {
     ...buildExpectedCoreResult(),
     source: 'pdf' as const,
     extractionConfidence: 0.88,
-    marathiText: 'सदर अर्ज',
+    marathiText: 'sadar arj',
   }
 
   const result = await analyzeRoute.handleAnalyzeFormData(formData, {
     analyzeMarathiDocument: async (input) => {
       assert.equal(input.source, 'pdf')
       assert.equal(input.extractionConfidence, 0.88)
-      assert.equal(input.marathiText, 'सदर अर्ज')
+      assert.equal(input.marathiText, 'sadar arj')
       return expected
     },
     extractPdfText: async () => ({
-      text: 'सदर अर्ज',
+      text: 'sadar arj',
       confidence: 0.88,
     }),
   })
@@ -150,16 +168,16 @@ test('handleEnrichRequest rejects requests without canonical english text', asyn
 test('handleBaselineCompareRequest forwards Marathi and canonical English to the comparison builder', async () => {
   const result = await analyzeRoute.handleBaselineCompareRequest(
     {
-      marathiText: 'à¤…à¤°à¥à¤œ à¤¸à¤¾à¤¦à¤° à¤•à¤°à¤¾',
+      marathiText: 'arj sadar kara',
       englishCanonical: 'Submit the application',
     },
     {
       buildBaselineComparison: async (input) => {
-        assert.equal(input.marathiText, 'à¤…à¤°à¥à¤œ à¤¸à¤¾à¤¦à¤° à¤•à¤°à¤¾')
+        assert.equal(input.marathiText, 'arj sadar kara')
         assert.equal(input.englishCanonical, 'Submit the application')
         return {
           targetLocale: 'en',
-          method: 'same_localizeText_without_glossary_hints',
+          method: 'same_localizeObject_without_glossary_hints',
           baselineText: 'Send the application',
           sameAsCurrent: false,
           glossaryMatchCount: 2,
@@ -171,7 +189,7 @@ test('handleBaselineCompareRequest forwards Marathi and canonical English to the
 
   assert.deepEqual(result, {
     targetLocale: 'en',
-    method: 'same_localizeText_without_glossary_hints',
+    method: 'same_localizeObject_without_glossary_hints',
     baselineText: 'Send the application',
     sameAsCurrent: false,
     glossaryMatchCount: 2,
@@ -190,7 +208,7 @@ test('handleBaselineCompareRequest rejects requests without Marathi and canonica
         {
           buildBaselineComparison: async () => ({
             targetLocale: 'en',
-            method: 'same_localizeText_without_glossary_hints',
+            method: 'same_localizeObject_without_glossary_hints',
             baselineText: 'unused',
             sameAsCurrent: true,
             glossaryMatchCount: 0,

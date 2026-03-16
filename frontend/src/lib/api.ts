@@ -47,6 +47,7 @@ export type {
   AnalysisCoreResult,
   AnalysisEnrichmentRequest,
   AnalysisEnrichmentResult,
+  AnalysisLocalizationContext,
   AnalysisSessionResult,
   GlossaryHit,
   GlossarySyncStatus,

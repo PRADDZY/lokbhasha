@@ -77,6 +77,11 @@ export function getLingoApiKey(): string {
   return (process.env.LINGODOTDEV_API_KEY || process.env.LINGO_DEV_API_KEY || '').trim()
 }
 
+export function getLingoEngineId(): string | null {
+  const configured = (process.env.LINGODOTDEV_ENGINE_ID || '').trim()
+  return configured || null
+}
+
 export function getConfiguredTargetLocales(): string[] {
   const configured = (process.env.LINGODOTDEV_TARGET_LOCALES || '').trim()
   if (!configured) {

@@ -12,6 +12,7 @@ import {
 } from '@/lib/api'
 import type {
   AnalysisComparisonResult,
+  AnalysisLocalizationContext,
   AnalysisSessionResult,
   GlossarySyncStatus,
   LingoSetupSummary,
@@ -80,6 +81,40 @@ function LinkedParts({ parts, activeLinkId, onActivate }: LinkedPartProps) {
   )
 }
 
+function resolveLocaleLabel(locale: string): string {
+  if (locale === 'mr') {
+    return 'Marathi (mr)'
+  }
+
+  if (locale === 'en') {
+    return 'English (en)'
+  }
+
+  const option = INDIAN_LANGUAGE_OPTIONS.find((entry) => entry.value === locale)
+  return option ? `${option.label} (${locale})` : locale
+}
+
+function getFallbackLocalizationContext(): AnalysisLocalizationContext {
+  return {
+    provider: 'lingo.dev',
+    engineSelectionMode: 'implicit_default',
+    engineId: null,
+    sourceLocale: {
+      configured: 'mr',
+      recognized: 'mr',
+      matchesConfigured: true,
+    },
+    canonicalStage: {
+      requestShape: 'structured_object',
+      method: 'localizeObject',
+      sourceLocale: 'mr',
+      targetLocale: 'en',
+      fast: true,
+      glossaryMode: 'none',
+    },
+  }
+}
+
 export function ResultsDisplay({ result }: ResultsDisplayProps) {
   const [sessionResult, setSessionResult] = useState(result)
   const [glossaryStatus, setGlossaryStatus] = useState<GlossarySyncStatus | null>(null)
@@ -110,9 +145,17 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
     .filter((option) => loadedLocales[option.value])
     .map((option) => [option.label, loadedLocales[option.value] as string] as const)
   const glossaryMatchCount = sessionResult.glossaryHits.length
+  const localizationContext = sessionResult.localizationContext || getFallbackLocalizationContext()
   const sourceLabel = sessionResult.source === 'pdf' ? 'PDF upload' : 'Pasted Marathi text'
-  const sourceLocaleLabel = 'Marathi (mr)'
-  const canonicalLocaleLabel = 'English (en)'
+  const configuredLocaleLabel = resolveLocaleLabel(localizationContext.sourceLocale.configured)
+  const recognizedSourceLabel = localizationContext.sourceLocale.matchesConfigured
+    ? `${resolveLocaleLabel(localizationContext.sourceLocale.recognized)} confirmed`
+    : `${resolveLocaleLabel(localizationContext.sourceLocale.recognized)} detected`
+  const canonicalLocaleLabel = resolveLocaleLabel(localizationContext.canonicalStage.targetLocale)
+  const canonicalStageLabel = 'Structured object request'
+  const engineLabel = localizationContext.engineSelectionMode === 'explicit'
+    ? localizationContext.engineId || 'Configured Lingo setup'
+    : 'Organization default'
   const localizedLocaleLabel =
     localizedEntries.length > 0 ? localizedEntries.map(([label]) => label).join(', ') : 'Generate when needed'
   const extractionConfidenceLabel =
@@ -430,19 +473,41 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
               <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Localization context</p>
               <h2 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Lingo.dev localization</h2>
               <p className="mt-3 max-w-3xl text-base leading-7 text-[var(--muted)]">
-                This request stays anchored in glossary-backed Marathi terms, produces canonical English first,
+                This request validates the source locale with Lingo, sends the canonical English stage as a structured object,
                 and only generates additional languages when you explicitly ask for them.
               </p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
               <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Source locale</p>
-                <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{sourceLocaleLabel}</p>
+                <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{configuredLocaleLabel}</p>
+                <p className="mt-2 text-sm text-[var(--muted)]">Configured locale for the source document.</p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Recognized source</p>
+                <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{recognizedSourceLabel}</p>
+                <p className="mt-2 text-sm text-[var(--muted)]">Lingo source recognition runs before the canonical step.</p>
               </div>
               <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Canonical locale</p>
                 <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{canonicalLocaleLabel}</p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Canonical stage</p>
+                <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{canonicalStageLabel}</p>
+                <p className="mt-2 text-sm text-[var(--muted)]">
+                  Compact glossary hints remain {localizationContext.canonicalStage.glossaryMode === 'fallback_request_hints' ? 'attached' : 'off'}.
+                </p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Active engine</p>
+                <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{engineLabel}</p>
+                <p className="mt-2 text-sm text-[var(--muted)]">
+                  {localizationContext.engineSelectionMode === 'explicit'
+                    ? 'A configured Lingo setup id is attached to this request.'
+                    : 'The organization default Lingo setup handled this request.'}
+                </p>
               </div>
               <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Generated locales</p>
