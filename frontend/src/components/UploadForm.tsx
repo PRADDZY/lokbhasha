@@ -62,17 +62,6 @@ export function UploadForm({
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-4">
-          {['Recognize', 'Glossary', 'Canonical English', 'Selected locales'].map((step) => (
-            <div
-              key={step}
-              className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-center text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink)]"
-            >
-              {step}
-            </div>
-          ))}
-        </div>
-
         {error ? (
           <div className="rounded-[1.25rem] border border-[rgba(140,55,28,0.18)] bg-[rgba(190,89,48,0.08)] px-4 py-3 text-sm text-[var(--accent)]">
             {error}
