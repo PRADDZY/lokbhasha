@@ -75,6 +75,11 @@ dict/*.sqlite3
 lokbhasha_plan.md
 .worktrees/
 
+# Lingo import helpers (local only)
+sqlite/lingo-import-batches/
+sqlite/lingo-import-sample.csv
+sqlite/lingo-import-sample-results.csv
+
 # Testing
 .coverage
 htmlcov/

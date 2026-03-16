@@ -52,6 +52,10 @@ test('getLingoSetupSummary reports the default setup alongside glossary-backed r
     databasePath,
     sourcePath,
     preparedAt: '2026-03-16T12:00:00.000Z',
+    engineId: 'eng_test',
+    engineName: 'LokBhasha',
+    remoteGlossaryTermCount: 2,
+    lastKnownMcpSyncAt: '2026-03-16T12:10:00.000Z',
     previewLimit: 2,
   }), null, 2))
 
@@ -99,7 +103,10 @@ test('getLingoSetupSummary reports the default setup alongside glossary-backed r
   assert.equal(summary.layers.glossary.sourceFormat, 'english_to_marathi_list')
   assert.equal(summary.layers.glossary.runtimeArtifactPath, databasePath)
   assert.equal(summary.layers.glossary.lastPreparedAt, '2026-03-16T12:00:00.000Z')
-  assert.equal(summary.layers.glossary.lastSyncedAt, null)
+  assert.equal(summary.layers.glossary.lastSyncedAt, '2026-03-16T12:10:00.000Z')
+  assert.equal(summary.layers.glossary.authoritativeEngineId, 'eng_test')
+  assert.equal(summary.layers.glossary.authoritativeEngineName, 'LokBhasha')
+  assert.equal(summary.layers.glossary.remoteGlossaryTermCount, 2)
   assert.equal(summary.layers.glossary.totalTerms, 2)
   assert.equal(summary.layers.brandVoices.configuredCount, 0)
   assert.equal(summary.layers.instructions.configuredCount, 0)

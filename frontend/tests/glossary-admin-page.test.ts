@@ -15,6 +15,8 @@ test('Glossary admin demo route exists and stays read-only', async () => {
   assert.match(source, /fetchGlossaryStatus/)
   assert.match(source, /fetchLingoSetup/)
   assert.match(source, /19k\.json/)
+  assert.match(source, /authoritative engine/i)
+  assert.match(source, /remote glossary count/i)
   assert.doesNotMatch(source, /create glossary entry/i)
   assert.doesNotMatch(source, /delete glossary entry/i)
 })

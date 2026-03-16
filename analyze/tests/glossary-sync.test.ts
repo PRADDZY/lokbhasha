@@ -87,6 +87,10 @@ test('getGlossarySyncStatus reports a ready lingo glossary package when snapshot
     databasePath,
     sourcePath,
     preparedAt: '2026-03-16T12:00:00.000Z',
+    engineId: 'eng_test',
+    engineName: 'LokBhasha',
+    remoteGlossaryTermCount: 2,
+    lastKnownMcpSyncAt: '2026-03-16T12:10:00.000Z',
     previewLimit: 2,
   }), null, 2))
 
@@ -108,7 +112,10 @@ test('getGlossarySyncStatus reports a ready lingo glossary package when snapshot
   assert.equal(status.managementMode, 'mcp_only')
   assert.equal(status.runtimeArtifactPath, databasePath)
   assert.equal(status.lastPreparedAt, '2026-03-16T12:00:00.000Z')
-  assert.equal(status.lastSyncedAt, null)
+  assert.equal(status.lastSyncedAt, '2026-03-16T12:10:00.000Z')
+  assert.equal(status.authoritativeEngineId, 'eng_test')
+  assert.equal(status.authoritativeEngineName, 'LokBhasha')
+  assert.equal(status.remoteGlossaryTermCount, 2)
   assert.equal(status.previewEntries.length, 2)
 })
 
@@ -124,6 +131,10 @@ test('getGlossarySyncStatus reports drift when the sqlite source changes after t
     databasePath,
     sourcePath,
     preparedAt: '2026-03-16T12:00:00.000Z',
+    engineId: 'eng_test',
+    engineName: 'LokBhasha',
+    remoteGlossaryTermCount: 2,
+    lastKnownMcpSyncAt: '2026-03-16T12:10:00.000Z',
     previewLimit: 2,
   }), null, 2))
 
@@ -141,6 +152,32 @@ test('getGlossarySyncStatus reports drift when the sqlite source changes after t
 
   assert.equal(status.syncState, 'drift')
   assert.equal(status.totalTerms, 3)
+  assert.equal(status.lastPreparedAt, '2026-03-16T12:00:00.000Z')
+  assert.equal(status.lastSyncedAt, '2026-03-16T12:10:00.000Z')
+})
+
+test('getGlossarySyncStatus reports missing when the package is prepared but no MCP sync has been recorded yet', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'lokbhasha-glossary-nosync-'))
+  const databasePath = path.join(tempDir, 'glossary.sqlite3')
+  const sourcePath = path.join(tempDir, '19k.json')
+  const snapshotPath = path.join(tempDir, 'lingo-glossary-sync.json')
+
+  createTestGlossaryDatabase(databasePath)
+  fs.writeFileSync(sourcePath, JSON.stringify(SAMPLE_GLOSSARY_SOURCE, null, 2))
+  fs.writeFileSync(snapshotPath, JSON.stringify(buildGlossarySyncSnapshot({
+    databasePath,
+    sourcePath,
+    preparedAt: '2026-03-16T12:00:00.000Z',
+    previewLimit: 2,
+  }), null, 2))
+
+  const status = getGlossarySyncStatus({
+    databasePath,
+    sourcePath,
+    snapshotPath,
+  })
+
+  assert.equal(status.syncState, 'missing')
   assert.equal(status.lastPreparedAt, '2026-03-16T12:00:00.000Z')
   assert.equal(status.lastSyncedAt, null)
 })

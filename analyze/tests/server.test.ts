@@ -66,7 +66,10 @@ function buildExpectedGlossaryStatus(): GlossarySyncStatus {
     packageHash: 'abc123',
     runtimeArtifactPath: '/app/sqlite/glossary.sqlite3',
     lastPreparedAt: '2026-03-16T12:00:00.000Z',
-    lastSyncedAt: null,
+    lastSyncedAt: '2026-03-16T12:10:00.000Z',
+    authoritativeEngineId: 'eng_lokbhasha',
+    authoritativeEngineName: 'LokBhasha',
+    remoteGlossaryTermCount: 249048,
     fallbackMode: 'compact_request_hints',
     previewEntries: [
       {
@@ -111,7 +114,10 @@ function buildExpectedLingoSetup(): LingoSetupSummary {
         packageHash: 'abc123',
         runtimeArtifactPath: '/app/sqlite/glossary.sqlite3',
         lastPreparedAt: '2026-03-16T12:00:00.000Z',
-        lastSyncedAt: null,
+        lastSyncedAt: '2026-03-16T12:10:00.000Z',
+        authoritativeEngineId: 'eng_lokbhasha',
+        authoritativeEngineName: 'LokBhasha',
+        remoteGlossaryTermCount: 249048,
         fallbackMode: 'compact_request_hints',
       },
       brandVoices: {

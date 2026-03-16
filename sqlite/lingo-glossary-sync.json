@@ -9,13 +9,16 @@
   "detectionStore": "sqlite",
   "managementMode": "mcp_only",
   "sourceHash": "ddc929ba813c1ae99784a5678c8adc486378fd60c45a6a54ab11ed20c46246da",
-  "packageHash": "97e1bc91d19d2bc9b575e1f31e5228262058393678591324eee17d76bac58381",
+  "packageHash": "a6149b136e68defba5feb2f7bef24dceca0c7d15105a9b0a69c30c013c40907c",
   "runtimeArtifactPath": "C:\\Users\\Pratik Daithankar\\Desktop\\LokBhasha\\.worktrees\\glossary-mcp-align\\sqlite\\glossary.sqlite3",
-  "totalTerms": 249048,
-  "customTranslationTerms": 249030,
-  "nonTranslatableTerms": 18,
-  "preparedAt": "2026-03-16T15:07:39.153Z",
-  "lastKnownMcpSyncAt": null,
+  "totalTerms": 19419,
+  "customTranslationTerms": 19419,
+  "nonTranslatableTerms": 0,
+  "preparedAt": "2026-03-16T20:35:55.340Z",
+  "lastKnownMcpSyncAt": "2026-03-17T00:00:00.000Z",
+  "engineId": "eng_6reNrearwZdBhmUV",
+  "engineName": "LokBhasha",
+  "remoteGlossaryTermCount": 249048,
   "previewEntries": [
     {
       "sourceLocale": "mr",
@@ -28,32 +31,32 @@
     {
       "sourceLocale": "mr",
       "targetLocale": "en",
-      "sourceText": "\" ऐवज पावला \"",
-      "targetText": "value received",
+      "sourceText": "- आत",
+      "targetText": "among, during , within",
       "type": "custom_translation",
       "hint": null
     },
     {
       "sourceLocale": "mr",
       "targetLocale": "en",
-      "sourceText": "\"sans recourse\"",
-      "targetText": "\"without recourse\"",
+      "sourceText": "- लगत",
+      "targetText": "on",
       "type": "custom_translation",
       "hint": null
     },
     {
       "sourceLocale": "mr",
       "targetLocale": "en",
-      "sourceText": "\"एक्स\" वर्धन द्रव्य",
-      "targetText": "x' (growth) facto",
+      "sourceText": "-अतीत",
+      "targetText": "super-, ultra -",
       "type": "custom_translation",
       "hint": null
     },
     {
       "sourceLocale": "mr",
       "targetLocale": "en",
-      "sourceText": "\"ओ\" प्रतिजन",
-      "targetText": "ohne agglutinin",
+      "sourceText": "-अधीन दावा सागणे",
+      "targetText": "claim under",
       "type": "custom_translation",
       "hint": null
     }

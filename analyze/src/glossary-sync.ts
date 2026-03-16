@@ -36,6 +36,9 @@ type GlossarySyncSnapshot = {
   nonTranslatableTerms: number
   preparedAt: string
   lastKnownMcpSyncAt: string | null
+  engineId: string | null
+  engineName: string | null
+  remoteGlossaryTermCount: number | null
   previewEntries: LingoGlossaryEntry[]
 }
 
@@ -125,6 +128,9 @@ export function buildGlossarySyncSnapshot(options?: {
   sourcePath?: string
   preparedAt?: string
   lastKnownMcpSyncAt?: string | null
+  engineId?: string | null
+  engineName?: string | null
+  remoteGlossaryTermCount?: number | null
   previewLimit?: number
 }): GlossarySyncSnapshot {
   const databasePath = options?.databasePath ?? getGlossaryDatabasePath()
@@ -151,6 +157,9 @@ export function buildGlossarySyncSnapshot(options?: {
     nonTranslatableTerms: summary.nonTranslatableTerms,
     preparedAt: options?.preparedAt ?? new Date().toISOString(),
     lastKnownMcpSyncAt: options?.lastKnownMcpSyncAt ?? null,
+    engineId: options?.engineId ?? null,
+    engineName: options?.engineName ?? null,
+    remoteGlossaryTermCount: options?.remoteGlossaryTermCount ?? null,
     previewEntries: summary.previewEntries,
   }
 }
@@ -170,6 +179,22 @@ export function getGlossarySyncStatus(options?: {
   const currentPackageHash = computeFileHash(resolvedDatabasePath)
   const currentSourceHash = computeFileHash(resolvedSourcePath)
   const snapshot = readGlossarySyncSnapshot(snapshotPath)
+  const snapshotMatchesLocal = Boolean(
+    snapshot &&
+    snapshot.sourceHash === currentSourceHash &&
+    snapshot.packageHash === currentPackageHash
+  )
+  const hasRecordedMcpSync = Boolean(snapshot?.lastKnownMcpSyncAt)
+  const remoteCountMatches = snapshot?.remoteGlossaryTermCount === summary.totalTerms
+  const syncState = !snapshot
+    ? 'missing'
+    : !snapshotMatchesLocal
+      ? 'drift'
+      : !hasRecordedMcpSync
+        ? 'missing'
+        : remoteCountMatches
+          ? 'ready'
+          : 'drift'
 
   return {
     source: 'government_19k',
@@ -180,11 +205,7 @@ export function getGlossarySyncStatus(options?: {
     authority: 'lingo_mcp',
     detectionStore: 'sqlite',
     managementMode: 'mcp_only',
-    syncState: snapshot
-      ? snapshot.sourceHash === currentSourceHash && snapshot.packageHash === currentPackageHash
-        ? 'ready'
-        : 'drift'
-      : 'missing',
+    syncState,
     totalTerms: summary.totalTerms,
     customTranslationTerms: summary.customTranslationTerms,
     nonTranslatableTerms: summary.nonTranslatableTerms,
@@ -192,6 +213,9 @@ export function getGlossarySyncStatus(options?: {
     runtimeArtifactPath: resolvedDatabasePath,
     lastPreparedAt: snapshot?.preparedAt ?? null,
     lastSyncedAt: snapshot?.lastKnownMcpSyncAt ?? null,
+    authoritativeEngineId: snapshot?.engineId ?? null,
+    authoritativeEngineName: snapshot?.engineName ?? null,
+    remoteGlossaryTermCount: snapshot?.remoteGlossaryTermCount ?? null,
     fallbackMode: 'compact_request_hints',
     previewEntries: summary.previewEntries,
   }

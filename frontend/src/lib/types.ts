@@ -45,6 +45,9 @@ export type GlossarySyncStatus = {
   runtimeArtifactPath: string
   lastPreparedAt: string | null
   lastSyncedAt: string | null
+  authoritativeEngineId: string | null
+  authoritativeEngineName: string | null
+  remoteGlossaryTermCount: number | null
   fallbackMode: 'compact_request_hints'
   previewEntries: LingoGlossaryEntry[]
 }
@@ -102,6 +105,9 @@ export type LingoSetupSummary = {
       runtimeArtifactPath: string
       lastPreparedAt: string | null
       lastSyncedAt: string | null
+      authoritativeEngineId: string | null
+      authoritativeEngineName: string | null
+      remoteGlossaryTermCount: number | null
       fallbackMode: 'compact_request_hints'
     }
     brandVoices: {

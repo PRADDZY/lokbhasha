@@ -4,7 +4,7 @@ import type { LingoSetupSummary } from './types'
 
 
 const DEFAULT_ENGINE_NOTE = 'Requests use the organization default Lingo setup.'
-const CONFIGURED_ENGINE_NOTE = 'Requests use the configured Lingo setup id.'
+const CONFIGURED_ENGINE_NOTE = 'Requests use the configured Lingo engine id.'
 
 export function getLingoSetupSummary(options?: {
   databasePath?: string
@@ -48,6 +48,9 @@ export function getLingoSetupSummary(options?: {
         runtimeArtifactPath: glossaryStatus.runtimeArtifactPath,
         lastPreparedAt: glossaryStatus.lastPreparedAt,
         lastSyncedAt: glossaryStatus.lastSyncedAt,
+        authoritativeEngineId: glossaryStatus.authoritativeEngineId,
+        authoritativeEngineName: glossaryStatus.authoritativeEngineName,
+        remoteGlossaryTermCount: glossaryStatus.remoteGlossaryTermCount,
         fallbackMode: glossaryStatus.fallbackMode,
       },
       brandVoices: {

@@ -109,6 +109,15 @@ export default async function GlossaryDemoPage() {
             <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Source and package</p>
             <div className="mt-5 space-y-4">
               <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Authoritative engine</p>
+                <p className="mt-3 text-base font-semibold text-[var(--ink)]">
+                  {glossaryStatus?.authoritativeEngineName ?? 'Not recorded'}
+                </p>
+                <p className="mt-2 text-sm text-[var(--muted)]">
+                  {glossaryStatus?.authoritativeEngineId ?? 'No engine id recorded yet.'}
+                </p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Active source file</p>
                 <p className="mt-3 text-base font-semibold text-[var(--ink)]">{glossaryStatus?.sourcePath ?? 'dict/19k.json'}</p>
               </div>
@@ -140,6 +149,12 @@ export default async function GlossaryDemoPage() {
                 <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Total terms</p>
                 <p className="mt-3 text-base font-semibold text-[var(--ink)]">
                   {glossaryStatus ? `${glossaryStatus.totalTerms} terms` : 'Loading'}
+                </p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Remote glossary count</p>
+                <p className="mt-3 text-base font-semibold text-[var(--ink)]">
+                  {glossaryStatus?.remoteGlossaryTermCount ?? 'Not recorded'}
                 </p>
               </div>
               <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
