@@ -144,6 +144,10 @@ Locale suggestions are guidance, not generated output.
 - After the sample result loads, those locales are pre-selected in the result-page language picker.
 - They are not translated automatically.
 - User-uploaded content does not receive pre-selected locales unless localized output already exists in session state.
+- If a sample result later has generated localized output, the picker uses a union of:
+  - already generated locale keys from the stored result
+  - sample suggested locales from demo metadata
+- Generated localized outputs always stay selected. Suggested locales only add pre-selection for locales that are not already loaded.
 
 This keeps additional language generation opt-in while still making the demo path feel guided.
 
@@ -218,9 +222,15 @@ This should feel like evidence for what happened, not just metadata boxes.
 The `canonical route` label should be explicit and stable. For this batch it means:
 
 - source recognition ran
-- glossary-backed Marathi terms were available
+- the canonical stage used the existing structured Lingo localization path
 - canonical English came from the structured Lingo localization step
 - the label is derived from existing `localizationContext` fields and does not introduce a new backend field
+- the label is about pipeline path, not proof that glossary context changed the wording
+
+Actual glossary participation stays separate:
+
+- `glossary match count` comes from `AnalysisCoreResult.glossaryHits.length`
+- `baseline comparison` remains the only explicit comparison view for wording change
 
 ### Optional Outputs
 
@@ -265,6 +275,20 @@ The glossary and quality panels should answer:
 - what Lingo setup is active
 - whether the result is ready to compare or extend
 
+The result page should distinguish request evidence from current environment status:
+
+- request evidence:
+  - source type
+  - recognized source locale
+  - canonical route
+  - glossary match count
+- current environment status:
+  - Lingo setup summary fetched from `GET /lingo-setup`
+  - glossary package readiness and preview entries fetched from `GET /glossary-status`
+  - quality readiness and baseline availability fetched from `GET /quality-summary`
+
+Batch 6 does not add a request-time snapshot of glossary or quality state. Current status panels are presented as live setup/readiness information, not as immutable evidence of what existed at request time.
+
 ### Data Contract Mapping
 
 Batch 6 should stay frontend-led. Every new label in this batch must come from an existing field or a frontend-derived summary.
@@ -274,11 +298,15 @@ Batch 6 should stay frontend-led. Every new label in this batch must come from a
 | `source type` | `AnalysisCoreResult.source` with optional `extractionConfidence` display | show only the source label if confidence is absent |
 | `recognized source locale` | `localizationContext.sourceLocale.recognized` and `matchesConfigured` | use the existing fallback localization context if the stored result lacks `localizationContext` |
 | `canonical route` | frontend-derived summary from `localizationContext.canonicalStage.requestShape`, `method`, and `glossaryMode`, plus the existing source-recognition message | fall back to the current fixed copy already used by the result page |
-| `default vs explicit Lingo setup` | `localizationContext.engineSelectionMode` and `engineId`; optional detail from `LingoSetupSummary.engine` | show `Default setup` if setup summary is still loading or unavailable |
-| `glossary package readiness` | `GlossarySyncStatus.syncState` from `GET /glossary-status` | loading state, then local error message if the fetch fails |
-| `preview term mappings` | `GlossarySyncStatus.previewEntries` from `GET /glossary-status` | omit the preview grid when no entries are available |
+| `default vs explicit Lingo setup` | request-time `localizationContext.engineSelectionMode` and `engineId` define the label; `LingoSetupSummary.engine` may add descriptive detail only | if the stored result lacks `localizationContext`, use the existing fallback localization context and label it as fallback-derived rather than inferring from live setup status |
+| `canonical English stage details` | existing `localizationContext.canonicalStage` fields | use the existing fallback localization context if request-time context is absent |
+| `active Lingo setup summary` | `LingoSetupSummary.engine` plus `LingoSetupSummary.layers` from `GET /lingo-setup` | loading state, then local error message if the fetch fails |
+| `glossary match count` | `AnalysisCoreResult.glossaryHits.length` | show `0 matches` when no hits are present |
+| `glossary package readiness` | live `GlossarySyncStatus.syncState` from `GET /glossary-status` | loading state, then local error message if the fetch fails |
+| `preview term mappings` | live `GlossarySyncStatus.previewEntries` from `GET /glossary-status` | omit the preview grid when no entries are available |
+| `readiness summary` | live `QualitySummary.layerStates`, `QualitySummary.selectedTargetLocales`, and `QualitySummary.glossaryStatus` | loading state, then local error message if the fetch fails |
 | `baseline comparison` | `QualitySummary.baselineComparison.available` plus the existing `POST /quality/baseline-compare` result state | show the current compare CTA and empty state until the compare request is run |
-| `next-step readiness signals` | existing quality cards derived from `QualitySummary.layerStates`, `QualitySummary.selectedTargetLocales`, and `QualitySummary.glossaryStatus` | no numeric confidence score is added in Batch 6; loading and error states use current panel behavior |
+| `next-step readiness signals` | reuse the same live quality cards derived from `QualitySummary`; no extra confidence scoring language or new backend field | loading and error states use current panel behavior |
 | `suggested locales` | frontend-only sample metadata stored alongside the session result for sample runs | omit pre-selection for user-uploaded or pasted runs |
 
 ## Data and State
