@@ -48,15 +48,15 @@ export default function Home() {
         <section className="flex flex-col justify-between rounded-[2rem] border border-[var(--line)] bg-[rgba(255,250,241,0.6)] p-8 md:p-12">
           <div className="space-y-8">
             <div className="inline-flex w-fit items-center rounded-full border border-[var(--line)] bg-[rgba(255,250,241,0.85)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-[var(--muted)]">
-              Civic language, made legible
+              Powered by Lingo.dev
             </div>
             <div className="space-y-4">
               <h1 className="section-title max-w-3xl text-5xl leading-none md:text-7xl">
-                Translate dense Marathi circulars into clear public guidance.
+                Lingo turns Marathi government circulars into canonical English and localized public guidance.
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-[var(--muted)] md:text-xl">
-                LokBhasha extracts text from circular PDFs, preserves important government terms,
-                and turns official language into readable English before any optional follow-up outputs are requested.
+                LokBhasha extracts Marathi from circular PDFs, keeps important glossary terms visible,
+                and sends the document through Lingo.dev for canonical English before any selected Indian languages are generated.
               </p>
             </div>
           </div>
@@ -71,8 +71,8 @@ export default function Home() {
               <p className="mt-3 text-lg font-semibold">Original text beside canonical English</p>
             </div>
             <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface)] p-5">
-              <p className="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">Focus</p>
-              <p className="mt-3 text-lg font-semibold">Government language that ordinary people can use</p>
+              <p className="text-xs uppercase tracking-[0.24em] text-[var(--muted)]">Locales</p>
+              <p className="mt-3 text-lg font-semibold">Selected Indian languages on demand</p>
             </div>
           </div>
         </section>

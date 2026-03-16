@@ -87,7 +87,12 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
   const localizedEntries = INDIAN_LANGUAGE_OPTIONS
     .filter((option) => loadedLocales[option.value])
     .map((option) => [option.label, loadedLocales[option.value] as string] as const)
+  const glossaryMatchCount = sessionResult.glossaryHits.length
   const sourceLabel = sessionResult.source === 'pdf' ? 'PDF upload' : 'Pasted Marathi text'
+  const sourceLocaleLabel = 'Marathi (mr)'
+  const canonicalLocaleLabel = 'English (en)'
+  const localizedLocaleLabel =
+    localizedEntries.length > 0 ? localizedEntries.map(([label]) => label).join(', ') : 'Generate when needed'
   const extractionConfidenceLabel =
     sessionResult.extractionConfidence === undefined
       ? ''
@@ -184,7 +189,7 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
       <div className="mx-auto max-w-6xl space-y-8">
         <div className="flex flex-col justify-between gap-6 rounded-[2rem] border border-[var(--line)] bg-[rgba(255,250,241,0.65)] p-8 md:flex-row md:items-end">
           <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted)]">Analysis result</p>
+            <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted)]">Lingo result</p>
             <h1 className="section-title mt-3 text-4xl md:text-6xl">Original and canonical view</h1>
             <p className="mt-4 max-w-2xl text-lg leading-8 text-[var(--muted)]">
               Source: {sourceLabel}
@@ -201,12 +206,44 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
 
         <section className="paper-panel rounded-[2rem] p-6 md:p-8">
           <div className="flex flex-col gap-6">
+            <div>
+              <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Localization context</p>
+              <h2 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Lingo.dev localization</h2>
+              <p className="mt-3 max-w-3xl text-base leading-7 text-[var(--muted)]">
+                This request stays anchored in glossary-backed Marathi terms, produces canonical English first,
+                and only generates additional languages when you explicitly ask for them.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Source locale</p>
+                <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{sourceLocaleLabel}</p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Canonical locale</p>
+                <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{canonicalLocaleLabel}</p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Generated locales</p>
+                <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{localizedLocaleLabel}</p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Glossary matches</p>
+                <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{glossaryMatchCount}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="paper-panel rounded-[2rem] p-6 md:p-8">
+          <div className="flex flex-col gap-6">
             <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Optional follow-up outputs</p>
                 <h2 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Generate only what you need</h2>
                 <p className="mt-3 max-w-2xl text-base leading-7 text-[var(--muted)]">
-                  Keep the main comparison stable, then request extra language output, a plain explanation, or key actions only when useful.
+                  Keep the main comparison stable, then request selected Indian languages, a plain explanation, or key actions only when useful.
                 </p>
               </div>
 
@@ -290,14 +327,16 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
 
         <div className="grid gap-6 lg:grid-cols-2">
           <article className="paper-panel rounded-[2rem] p-6 md:p-8">
-            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Original Marathi</p>
+            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">1. Source Marathi</p>
+            <p className="mt-2 text-sm text-[var(--muted)]">Original Marathi</p>
             <div className="mt-5 rounded-[1.5rem] bg-[var(--surface-strong)] p-5 text-lg leading-9 text-[var(--ink)]">
               <LinkedParts parts={linkedState.marathiParts} activeLinkId={activeLinkId} onActivate={setActiveLinkId} />
             </div>
           </article>
 
           <article className="paper-panel rounded-[2rem] p-6 md:p-8">
-            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Canonical English</p>
+            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">2. Lingo canonical English</p>
+            <p className="mt-2 text-sm text-[var(--muted)]">Canonical English</p>
             <div className="mt-5 rounded-[1.5rem] bg-[var(--surface-strong)] p-5 text-lg leading-8 text-[var(--ink)]">
               <LinkedParts parts={linkedState.englishParts} activeLinkId={activeLinkId} onActivate={setActiveLinkId} />
             </div>
@@ -312,14 +351,14 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
 
         {sessionResult.simplifiedEnglish ? (
           <article className="rounded-[2rem] border border-[rgba(141,79,42,0.2)] bg-[rgba(141,79,42,0.08)] p-6 md:p-8">
-            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Plain explanation</p>
+            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">3. Plain-language English</p>
             <div className="mt-5 text-xl leading-9 text-[var(--ink)]">{sessionResult.simplifiedEnglish}</div>
           </article>
         ) : null}
 
         {sessionResult.actions?.length ? (
           <article className="paper-panel rounded-[2rem] p-6 md:p-8">
-            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Key actions</p>
+            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">4. Key actions</p>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               {sessionResult.actions.map((item, index) => (
                 <div
@@ -341,7 +380,7 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
 
         {localizedEntries.length ? (
           <article className="paper-panel rounded-[2rem] p-6 md:p-8">
-            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Localized outputs</p>
+            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Lingo localized outputs</p>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               {localizedEntries.map(([label, localizedText]) => (
                 <div

@@ -15,8 +15,9 @@ test('UploadForm shows a full-screen analysis overlay for PDF processing', () =>
   const overlaySource = readFileSync(analysisOverlayPath, 'utf8')
 
   assert.match(uploadFormSource, /AnalysisOverlay/)
+  assert.match(uploadFormSource, /Lingo/i)
   assert.match(overlaySource, /Analyzing circular/i)
   assert.match(overlaySource, /Extracting Marathi text from PDF pages/i)
-  assert.match(overlaySource, /Matching glossary terms and sending the document through translation/i)
+  assert.match(overlaySource, /Matching glossary terms before the Lingo localization pass/i)
   assert.match(overlaySource, /fixed\s+inset-0/)
 })

@@ -26,8 +26,22 @@ export function UploadForm({
       <section aria-busy={isLoading} className="paper-panel rounded-[2rem] p-6 md:p-8">
         <div className="space-y-6">
           <div>
-            <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted)]">Analysis desk</p>
-            <h2 className="section-title mt-3 text-4xl">Run a circular through the pipeline</h2>
+            <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted)]">Lingo workspace</p>
+            <h2 className="section-title mt-3 text-4xl">Send a circular through the Lingo pipeline</h2>
+            <p className="mt-3 max-w-xl text-base leading-7 text-[var(--muted)]">
+              Lingo turns Marathi into canonical English first, then generates selected Indian languages only when you ask for them.
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            {['Extract', 'Translate', 'Localize'].map((step) => (
+              <div
+                key={step}
+                className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface-strong)] px-4 py-3 text-center text-sm font-semibold uppercase tracking-[0.18em] text-[var(--ink)]"
+              >
+                {step}
+              </div>
+            ))}
           </div>
 
           <div className="rounded-[1.5rem] border border-dashed border-[var(--line)] bg-[var(--surface-strong)] p-5">
@@ -78,7 +92,7 @@ export function UploadForm({
             disabled={isLoading}
             className="w-full rounded-full bg-[var(--ink)] px-6 py-4 text-sm font-semibold uppercase tracking-[0.22em] text-white transition hover:translate-y-[-1px] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {isLoading ? 'Analyzing circular...' : 'Analyze circular'}
+            {isLoading ? 'Lingo is translating...' : 'Translate with Lingo'}
           </button>
         </div>
       </section>
