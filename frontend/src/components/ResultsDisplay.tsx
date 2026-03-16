@@ -3,8 +3,20 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
-import { enrichDocument, fetchGlossaryStatus, fetchLingoSetup } from '@/lib/api'
-import type { AnalysisSessionResult, GlossarySyncStatus, LingoSetupSummary } from '@/lib/api'
+import {
+  enrichDocument,
+  fetchGlossaryStatus,
+  fetchLingoSetup,
+  fetchQualitySummary,
+  runBaselineComparison,
+} from '@/lib/api'
+import type {
+  AnalysisComparisonResult,
+  AnalysisSessionResult,
+  GlossarySyncStatus,
+  LingoSetupSummary,
+  QualitySummary,
+} from '@/lib/api'
 import { buildLinkedGlossaryState } from '@/lib/glossary-links'
 import { INDIAN_LANGUAGE_OPTIONS } from '@/lib/indian-languages'
 
@@ -72,14 +84,20 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
   const [sessionResult, setSessionResult] = useState(result)
   const [glossaryStatus, setGlossaryStatus] = useState<GlossarySyncStatus | null>(null)
   const [lingoSetup, setLingoSetup] = useState<LingoSetupSummary | null>(null)
+  const [qualitySummary, setQualitySummary] = useState<QualitySummary | null>(null)
+  const [baselineComparison, setBaselineComparison] = useState<AnalysisComparisonResult | null>(null)
   const [selectedLocales, setSelectedLocales] = useState<string[]>(
     Object.keys(result.localizedText ?? {})
   )
   const [activeLinkId, setActiveLinkId] = useState<string | null>(null)
   const [error, setError] = useState('')
-  const [loadingMode, setLoadingMode] = useState<'translation' | 'explanation' | 'actions' | null>(null)
+  const [loadingMode, setLoadingMode] = useState<
+    'translation' | 'explanation' | 'actions' | 'baseline' | null
+  >(null)
   const [glossaryStatusError, setGlossaryStatusError] = useState('')
   const [lingoSetupError, setLingoSetupError] = useState('')
+  const [qualitySummaryError, setQualitySummaryError] = useState('')
+  const [baselineComparisonError, setBaselineComparisonError] = useState('')
 
   const linkedState = buildLinkedGlossaryState({
     marathiText: sessionResult.marathiText,
@@ -185,6 +203,60 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
       ? 'Reviewer names are listed'
       : 'No reviewer names found'
     : 'No reviewer names found'
+  const reviewerStatusValue = qualitySummary
+    ? qualitySummary.layerStates.aiReviewers === 'ready'
+      ? 'Ready'
+      : 'Not surfaced'
+    : 'Loading'
+  const reviewerStatusDetail = qualitySummary
+    ? qualitySummary.layerStates.aiReviewers === 'ready'
+      ? 'AI reviewers are surfaced for this setup.'
+      : 'No AI reviewer status is surfaced yet.'
+    : 'Waiting for quality summary.'
+  const qualityGlossaryCoverageValue = qualitySummary
+    ? `${qualitySummary.glossaryStatus.totalTerms} terms`
+    : 'Loading quality summary...'
+  const qualityGlossaryCoverageDetail = qualitySummary
+    ? qualitySummary.glossaryStatus.lastSyncedAt
+      ? `Last prepared ${qualitySummary.glossaryStatus.lastSyncedAt.slice(0, 10)}`
+      : 'No prepared timestamp found.'
+    : 'Waiting for quality summary.'
+  const localeReadinessValue = qualitySummary
+    ? `${qualitySummary.selectedTargetLocales.length + 2} locales ready`
+    : 'Loading'
+  const localeReadinessDetail = qualitySummary
+    ? [
+        'Marathi',
+        'English',
+        ...qualitySummary.selectedTargetLocales
+          .slice(0, 3)
+          .map((locale) => INDIAN_LANGUAGE_OPTIONS.find((option) => option.value === locale)?.label || locale),
+        ...(qualitySummary.selectedTargetLocales.length > 3
+          ? [`+${qualitySummary.selectedTargetLocales.length - 3} more`]
+          : []),
+      ].join(', ')
+    : 'Waiting for locale readiness.'
+  const baselineComparisonReady = Boolean(baselineComparison)
+  const baselineCompareDisabled = loadingMode !== null
+  const baselineCompareButtonLabel =
+    loadingMode === 'baseline'
+      ? 'Running baseline comparison...'
+      : 'Run baseline comparison'
+  const baselineComparisonValue = baselineComparison
+    ? baselineComparison.sameAsCurrent
+      ? 'No wording change'
+      : 'Wording changed'
+    : 'Ready to compare'
+  const baselineComparisonDetail = baselineComparison
+    ? baselineComparison.sameAsCurrent
+      ? 'Current canonical result matches the baseline result.'
+      : 'Glossary context changed the canonical wording.'
+    : 'Baseline uses the same request without glossary hints.'
+  const baselineChangeSummary = baselineComparison
+    ? baselineComparison.sameAsCurrent
+      ? `Current canonical result matches the baseline result. ${baselineComparison.glossaryMatchCount} glossary matches were found, and ${baselineComparison.hintTermCount} compact hints were ready if needed.`
+      : `Glossary context changed the canonical wording. ${baselineComparison.glossaryMatchCount} glossary matches were found, and ${baselineComparison.hintTermCount} compact hints were ready if needed.`
+    : ''
 
   useEffect(() => {
     let isCancelled = false
@@ -224,6 +296,25 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
 
         setLingoSetupError(
           setupError instanceof Error ? setupError.message : 'Lingo setup failed to load.'
+        )
+      })
+
+    void fetchQualitySummary()
+      .then((summary) => {
+        if (isCancelled) {
+          return
+        }
+
+        setQualitySummary(summary)
+        setQualitySummaryError('')
+      })
+      .catch((summaryError) => {
+        if (isCancelled) {
+          return
+        }
+
+        setQualitySummaryError(
+          summaryError instanceof Error ? summaryError.message : 'Quality summary failed to load.'
         )
       })
 
@@ -290,6 +381,24 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
       persistResult(mergeSessionResult(sessionResult, enrichment))
     } catch (enrichmentError) {
       setError(enrichmentError instanceof Error ? enrichmentError.message : 'Action extraction failed.')
+    } finally {
+      setLoadingMode(null)
+    }
+  }
+
+  async function requestBaselineComparison() {
+    setBaselineComparisonError('')
+    setLoadingMode('baseline')
+    try {
+      const comparison = await runBaselineComparison({
+        marathiText: sessionResult.marathiText,
+        englishCanonical: sessionResult.englishCanonical,
+      })
+      setBaselineComparison(comparison)
+    } catch (comparisonError) {
+      setBaselineComparisonError(
+        comparisonError instanceof Error ? comparisonError.message : 'Baseline comparison failed.'
+      )
     } finally {
       setLoadingMode(null)
     }
@@ -455,6 +564,89 @@ export function ResultsDisplay({ result }: ResultsDisplayProps) {
                 ))}
               </div>
             </div>
+          </div>
+        </section>
+
+        <section className="paper-panel rounded-[2rem] p-6 md:p-8">
+          <div className="flex flex-col gap-6">
+            <div>
+              <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Quality check</p>
+              <h2 className="mt-3 text-3xl font-semibold text-[var(--ink)]">Quality check</h2>
+              <p className="mt-3 max-w-3xl text-base leading-7 text-[var(--muted)]">
+                Review status, glossary coverage, locale readiness, and a direct comparison with a baseline result.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Reviewer status</p>
+                <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{reviewerStatusValue}</p>
+                <p className="mt-2 text-sm text-[var(--muted)]">{reviewerStatusDetail}</p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Glossary coverage</p>
+                <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{qualityGlossaryCoverageValue}</p>
+                <p className="mt-2 text-sm text-[var(--muted)]">{qualityGlossaryCoverageDetail}</p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Locale readiness</p>
+                <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{localeReadinessValue}</p>
+                <p className="mt-2 text-sm text-[var(--muted)]">{localeReadinessDetail}</p>
+              </div>
+              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Baseline comparison</p>
+                <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{baselineComparisonValue}</p>
+                <p className="mt-2 text-sm text-[var(--muted)]">{baselineComparisonDetail}</p>
+                <button
+                  type="button"
+                  onClick={requestBaselineComparison}
+                  disabled={baselineCompareDisabled}
+                  className="mt-4 w-full rounded-full border border-[var(--line)] bg-[var(--surface)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--ink)] transition disabled:cursor-not-allowed disabled:opacity-55"
+                >
+                  {baselineCompareButtonLabel}
+                </button>
+              </div>
+            </div>
+
+            {qualitySummaryError ? (
+              <div className="rounded-[1.25rem] border border-[rgba(140,55,28,0.18)] bg-[rgba(190,89,48,0.08)] px-4 py-3 text-sm text-[var(--accent)]">
+                {qualitySummaryError}
+              </div>
+            ) : null}
+
+            {baselineComparisonError ? (
+              <div className="rounded-[1.25rem] border border-[rgba(140,55,28,0.18)] bg-[rgba(190,89,48,0.08)] px-4 py-3 text-sm text-[var(--accent)]">
+                {baselineComparisonError}
+              </div>
+            ) : null}
+
+            {baselineComparisonReady ? (
+              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-5">
+                <div className="flex flex-col gap-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Baseline comparison</p>
+                  <h3 className="text-2xl font-semibold text-[var(--ink)]">Canonical vs baseline</h3>
+                  <p className="text-sm text-[var(--muted)]">
+                    Baseline uses the same request without glossary hints.
+                  </p>
+                </div>
+
+                <div className="mt-5 grid gap-4 lg:grid-cols-2">
+                  <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Current canonical result</p>
+                    <p className="mt-3 text-base leading-7 text-[var(--ink)]">{sessionResult.englishCanonical}</p>
+                  </div>
+                  <div className="rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                    <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Baseline result without glossary hints</p>
+                    <p className="mt-3 text-base leading-7 text-[var(--ink)]">{baselineComparison?.baselineText}</p>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-[1.25rem] border border-[var(--line)] bg-[var(--surface)] p-4">
+                  <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">What changed</p>
+                  <p className="mt-3 text-sm leading-6 text-[var(--muted)]">{baselineChangeSummary}</p>
+                </div>
+              </div>
+            ) : null}
           </div>
         </section>
 
