@@ -1,5 +1,5 @@
 import { extractActions, simplifyEnglishText } from './english'
-import { buildTerminologyHints } from './terminology'
+import { buildFallbackGlossaryHints } from './terminology'
 import type {
   AnalysisCoreResult,
   AnalysisEnrichmentRequest,
@@ -30,13 +30,13 @@ export async function analyzeMarathiDocument(
   dependencies: AnalyzeDependencies
 ): Promise<AnalysisCoreResult> {
   const glossaryHits = dependencies.detectGlossaryHits(input.marathiText)
-  const terminologyHints = buildTerminologyHints(glossaryHits)
+  const fallbackGlossaryHints = buildFallbackGlossaryHints(glossaryHits)
 
   const englishCanonical = await dependencies.lingoClient.localizeText(input.marathiText, {
     sourceLocale: 'mr',
     targetLocale: 'en',
     fast: true,
-    ...(Object.keys(terminologyHints).length ? { hints: terminologyHints } : {}),
+    ...(Object.keys(fallbackGlossaryHints).length ? { hints: fallbackGlossaryHints } : {}),
   })
 
   return {

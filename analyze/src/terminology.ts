@@ -1,7 +1,7 @@
 import type { GlossaryHit } from './types'
 
 
-export function buildTerminologyHints(
+export function buildFallbackGlossaryHints(
   glossaryHits: GlossaryHit[],
   maxHints = 12
 ): Record<string, string[]> {

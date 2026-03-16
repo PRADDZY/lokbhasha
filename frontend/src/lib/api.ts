@@ -2,6 +2,7 @@ import type {
   AnalysisCoreResult,
   AnalysisEnrichmentRequest,
   AnalysisEnrichmentResult,
+  GlossarySyncStatus,
 } from './types'
 
 
@@ -19,6 +20,10 @@ function getEnrichApiUrl(): string {
   return `${getApiBaseUrl()}/enrich`
 }
 
+function getGlossaryStatusApiUrl(): string {
+  return `${getApiBaseUrl()}/glossary-status`
+}
+
 export type {
   ActionItem,
   AnalysisCoreResult,
@@ -26,6 +31,8 @@ export type {
   AnalysisEnrichmentResult,
   AnalysisSessionResult,
   GlossaryHit,
+  GlossarySyncStatus,
+  LingoGlossaryEntry,
 } from './types'
 
 export async function analyzeDocument(input: {
@@ -68,4 +75,17 @@ export async function enrichDocument(input: AnalysisEnrichmentRequest): Promise<
   }
 
   return payload as AnalysisEnrichmentResult
+}
+
+export async function fetchGlossaryStatus(): Promise<GlossarySyncStatus> {
+  const response = await fetch(getGlossaryStatusApiUrl(), {
+    method: 'GET',
+  })
+
+  const payload = (await response.json().catch(() => null)) as GlossarySyncStatus | { detail?: string } | null
+  if (!response.ok) {
+    throw new Error((payload as { detail?: string } | null)?.detail || 'Analysis failed.')
+  }
+
+  return payload as GlossarySyncStatus
 }

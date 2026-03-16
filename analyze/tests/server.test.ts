@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import type { AnalysisCoreResult, AnalysisEnrichmentResult } from '../src/types'
+import type { AnalysisCoreResult, AnalysisEnrichmentResult, GlossarySyncStatus } from '../src/types'
 import { buildAnalyzeServer, getStartupFailureMessage } from '../src/server'
 
 
@@ -21,6 +21,31 @@ function buildExpectedEnrichmentResult(): AnalysisEnrichmentResult {
     },
     simplifiedEnglish: 'Submit the application',
     actions: [],
+  }
+}
+
+function buildExpectedGlossaryStatus(): GlossarySyncStatus {
+  return {
+    source: 'sqlite',
+    sourceLocale: 'mr',
+    targetLocale: 'en',
+    syncState: 'ready',
+    totalTerms: 249048,
+    customTranslationTerms: 249040,
+    nonTranslatableTerms: 8,
+    packageHash: 'abc123',
+    lastSyncedAt: '2026-03-16T12:00:00.000Z',
+    fallbackMode: 'compact_request_hints',
+    previewEntries: [
+      {
+        sourceLocale: 'mr',
+        targetLocale: 'en',
+        sourceText: 'अर्ज',
+        targetText: 'application',
+        type: 'custom_translation',
+        hint: null,
+      },
+    ],
   }
 }
 
@@ -97,6 +122,7 @@ test('buildAnalyzeServer explains how to use the enrich endpoint on GET requests
   const server = buildAnalyzeServer({
     handleAnalyzeRequest: async () => buildExpectedCoreResult(),
     handleEnrichRequest: async () => buildExpectedEnrichmentResult(),
+    handleGlossaryStatusRequest: async () => buildExpectedGlossaryStatus(),
   })
 
   const response = await server.inject({
@@ -108,6 +134,23 @@ test('buildAnalyzeServer explains how to use the enrich endpoint on GET requests
   assert.deepEqual(response.json(), {
     detail: 'Use POST /enrich with canonical English text and requested outputs.',
   })
+  await server.close()
+})
+
+test('buildAnalyzeServer exposes glossary sync status for the result view', async () => {
+  const server = buildAnalyzeServer({
+    handleAnalyzeRequest: async () => buildExpectedCoreResult(),
+    handleEnrichRequest: async () => buildExpectedEnrichmentResult(),
+    handleGlossaryStatusRequest: async () => buildExpectedGlossaryStatus(),
+  })
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/glossary-status',
+  })
+
+  assert.equal(response.statusCode, 200)
+  assert.deepEqual(response.json(), buildExpectedGlossaryStatus())
   await server.close()
 })
 

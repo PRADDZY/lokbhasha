@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "source": "sqlite",
+  "sourceLocale": "mr",
+  "targetLocale": "en",
+  "sourceHash": "46b3389f063b6bce4e2afbd5b696bce7fa2dca78df2c16250a9ff149bdc35fd6",
+  "totalTerms": 249048,
+  "customTranslationTerms": 249030,
+  "nonTranslatableTerms": 18,
+  "preparedAt": "2026-03-16T09:34:21.508Z",
+  "previewEntries": [
+    {
+      "sourceLocale": "mr",
+      "targetLocale": "en",
+      "sourceText": " काढून टाकणे",
+      "targetText": "rusticate",
+      "type": "custom_translation",
+      "hint": null
+    },
+    {
+      "sourceLocale": "mr",
+      "targetLocale": "en",
+      "sourceText": "\" ऐवज पावला \"",
+      "targetText": "value received",
+      "type": "custom_translation",
+      "hint": null
+    },
+    {
+      "sourceLocale": "mr",
+      "targetLocale": "en",
+      "sourceText": "\"sans recourse\"",
+      "targetText": "\"without recourse\"",
+      "type": "custom_translation",
+      "hint": null
+    },
+    {
+      "sourceLocale": "mr",
+      "targetLocale": "en",
+      "sourceText": "\"एक्स\" वर्धन द्रव्य",
+      "targetText": "x' (growth) facto",
+      "type": "custom_translation",
+      "hint": null
+    },
+    {
+      "sourceLocale": "mr",
+      "targetLocale": "en",
+      "sourceText": "\"ओ\" प्रतिजन",
+      "targetText": "ohne agglutinin",
+      "type": "custom_translation",
+      "hint": null
+    }
+  ]
+}
