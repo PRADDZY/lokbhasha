@@ -37,6 +37,55 @@ export type GlossarySyncStatus = {
   previewEntries: LingoGlossaryEntry[]
 }
 
+export type LingoSetupLayerStatus = 'ready' | 'not_surfaced'
+
+export type LingoSetupSummary = {
+  sourceLocale: string
+  canonicalTargetLocale: string
+  selectedTargetLocales: string[]
+  runtimePath: ['mr->en', 'en->selectedLocales']
+  engine: {
+    selectionMode: 'implicit_default'
+    engineId: null
+    status: 'default_org_engine'
+    note: string
+  }
+  layers: {
+    glossary: {
+      status: GlossarySyncState
+      source: 'sqlite'
+      sourceLocale: string
+      targetLocale: string
+      precedence: 'highest'
+      totalTerms: number
+      customTranslationTerms: number
+      nonTranslatableTerms: number
+      packageHash: string
+      lastSyncedAt: string | null
+      fallbackMode: 'compact_request_hints'
+    }
+    brandVoices: {
+      status: LingoSetupLayerStatus
+      supportedShape: 'one_per_target_locale'
+      configuredCount: number
+      activeInRuntime: boolean
+    }
+    instructions: {
+      status: LingoSetupLayerStatus
+      supportedShape: 'many_per_locale'
+      wildcardSupported: boolean
+      configuredCount: number
+      activeInRuntime: boolean
+    }
+    aiReviewers: {
+      status: LingoSetupLayerStatus
+      supportedShape: 'async_per_locale_pair'
+      configuredCount: number
+      activeInRuntime: boolean
+    }
+  }
+}
+
 export type ActionItem = {
   action: string
   deadline: string | null

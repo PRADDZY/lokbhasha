@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import type { AnalysisCoreResult, AnalysisEnrichmentResult, GlossarySyncStatus } from '../src/types'
+import type {
+  AnalysisCoreResult,
+  AnalysisEnrichmentResult,
+  GlossarySyncStatus,
+  LingoSetupSummary,
+} from '../src/types'
 import { buildAnalyzeServer, getStartupFailureMessage } from '../src/server'
 
 
@@ -46,6 +51,55 @@ function buildExpectedGlossaryStatus(): GlossarySyncStatus {
         hint: null,
       },
     ],
+  }
+}
+
+function buildExpectedLingoSetup(): LingoSetupSummary {
+  return {
+    sourceLocale: 'mr',
+    canonicalTargetLocale: 'en',
+    selectedTargetLocales: ['as', 'bn', 'gu', 'hi'],
+    runtimePath: ['mr->en', 'en->selectedLocales'],
+    engine: {
+      selectionMode: 'implicit_default',
+      engineId: null,
+      status: 'default_org_engine',
+      note: 'SDK wrapper uses the organization default engine.',
+    },
+    layers: {
+      glossary: {
+        status: 'ready',
+        source: 'sqlite',
+        sourceLocale: 'mr',
+        targetLocale: 'en',
+        precedence: 'highest',
+        totalTerms: 249048,
+        customTranslationTerms: 249040,
+        nonTranslatableTerms: 8,
+        packageHash: 'abc123',
+        lastSyncedAt: '2026-03-16T12:00:00.000Z',
+        fallbackMode: 'compact_request_hints',
+      },
+      brandVoices: {
+        status: 'not_surfaced',
+        supportedShape: 'one_per_target_locale',
+        configuredCount: 0,
+        activeInRuntime: false,
+      },
+      instructions: {
+        status: 'not_surfaced',
+        supportedShape: 'many_per_locale',
+        wildcardSupported: true,
+        configuredCount: 0,
+        activeInRuntime: false,
+      },
+      aiReviewers: {
+        status: 'not_surfaced',
+        supportedShape: 'async_per_locale_pair',
+        configuredCount: 0,
+        activeInRuntime: false,
+      },
+    },
   }
 }
 
@@ -151,6 +205,24 @@ test('buildAnalyzeServer exposes glossary sync status for the result view', asyn
 
   assert.equal(response.statusCode, 200)
   assert.deepEqual(response.json(), buildExpectedGlossaryStatus())
+  await server.close()
+})
+
+test('buildAnalyzeServer exposes a read-only lingo setup summary for the result view', async () => {
+  const server = buildAnalyzeServer({
+    handleAnalyzeRequest: async () => buildExpectedCoreResult(),
+    handleEnrichRequest: async () => buildExpectedEnrichmentResult(),
+    handleGlossaryStatusRequest: async () => buildExpectedGlossaryStatus(),
+    handleLingoSetupRequest: async () => buildExpectedLingoSetup(),
+  })
+
+  const response = await server.inject({
+    method: 'GET',
+    url: '/lingo-setup',
+  })
+
+  assert.equal(response.statusCode, 200)
+  assert.deepEqual(response.json(), buildExpectedLingoSetup())
   await server.close()
 })
 
