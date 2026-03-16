@@ -10,8 +10,9 @@ import { getAnalyzeErrorStatus, handleAnalyzeFormData, handleEnrichRequest } fro
 import { getAllowedOrigins, getAnalyzePort, getGlossaryDatabasePath } from './config'
 import { extractPdfText } from './extraction'
 import { detectGlossaryHits } from './glossary'
+import { getGlossarySyncStatus } from './glossary-sync'
 import { createLingoClient } from './lingo'
-import type { AnalysisCoreResult, AnalysisEnrichmentResult } from './types'
+import type { AnalysisCoreResult, AnalysisEnrichmentResult, GlossarySyncStatus } from './types'
 
 
 type AnalyzeRequestHandler = (formData: FormData) => Promise<AnalysisCoreResult>
@@ -24,9 +25,12 @@ type EnrichRequestHandler = (
   } | null | undefined
 ) => Promise<AnalysisEnrichmentResult>
 
+type GlossaryStatusRequestHandler = () => Promise<GlossarySyncStatus> | GlossarySyncStatus
+
 type AnalyzeServerDependencies = {
   handleAnalyzeRequest?: AnalyzeRequestHandler
   handleEnrichRequest?: EnrichRequestHandler
+  handleGlossaryStatusRequest?: GlossaryStatusRequestHandler
 }
 
 async function requestToFormData(request: FastifyRequest): Promise<FormData> {
@@ -95,10 +99,18 @@ export function createEnrichRequestHandler(): EnrichRequestHandler {
     })
 }
 
+export function createGlossaryStatusRequestHandler(): GlossaryStatusRequestHandler {
+  return () => getGlossarySyncStatus({
+    databasePath: getGlossaryDatabasePath(),
+  })
+}
+
 export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {}): FastifyInstance {
   const server = Fastify({ logger: false })
   const handleAnalyzeRequest = dependencies.handleAnalyzeRequest ?? createAnalyzeRequestHandler()
   const enrichRequestHandler = dependencies.handleEnrichRequest ?? createEnrichRequestHandler()
+  const glossaryStatusRequestHandler =
+    dependencies.handleGlossaryStatusRequest ?? createGlossaryStatusRequestHandler()
 
   server.register(cors, {
     origin: getAllowedOrigins(),
@@ -118,6 +130,21 @@ export function buildAnalyzeServer(dependencies: AnalyzeServerDependencies = {})
     return reply.code(405).send({
       detail: 'Use POST /enrich with canonical English text and requested outputs.',
     })
+  })
+
+  server.get('/glossary-status', async (_, reply) => {
+    try {
+      const result = await glossaryStatusRequestHandler()
+      return reply.send(result)
+    } catch (error) {
+      const status = getAnalyzeErrorStatus(error)
+      const message = status === 500
+        ? 'Analysis failed.'
+        : error instanceof Error
+          ? error.message
+          : 'Analysis failed.'
+      return reply.code(status).send({ detail: message })
+    }
   })
 
   server.post('/analyze', async (request, reply) => {

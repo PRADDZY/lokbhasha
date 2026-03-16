@@ -6,7 +6,8 @@
     "start": "tsx src/server.ts",
     "test": "tsx --test tests/*.test.ts",
     "check": "tsc --noEmit -p tsconfig.json",
-    "verify:glossary": "tsx scripts/verify-glossary.ts"
+    "verify:glossary": "tsx scripts/verify-glossary.ts",
+    "prepare:glossary-sync": "tsx scripts/prepare-glossary-sync.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
