@@ -56,11 +56,11 @@ This keeps the translation path aligned with the hackathon goal while still givi
 
 ## Screens
 
-These screenshot slots are wired and ready. Replace the placeholder files in `assets/1.png` and `assets/2.png` with real product captures when you are ready.
+Current product screenshots from the live flow:
 
 | Live sample flow | Result view |
 | --- | --- |
-| ![LokBhasha homepage placeholder](assets/1.png) | ![LokBhasha result placeholder](assets/2.png) |
+| ![LokBhasha homepage](assets/1.png) | ![LokBhasha result view](assets/2.png) |
 
 ## Architecture
 
@@ -224,6 +224,3 @@ Generates only the optional outputs the user asks for, such as selected target l
 - feature work is done in isolated git worktrees before PR and merge
 - glossary management is currently dashboard/MCP-facing, not exposed as a public in-app editor
 
-## License
-
-Hackathon project repository. Add your final license here if you want the repo to declare one explicitly.
