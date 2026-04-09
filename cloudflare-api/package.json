@@ -1,0 +1,20 @@
+{
+  "name": "lokbhasha-cloudflare-api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "tsx --test tests/*.test.ts",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "build:d1": "tsx scripts/build-d1-seed.ts"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260404.0",
+    "@types/node": "^20.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.2.0",
+    "wrangler": "^4.10.0"
+  }
+}

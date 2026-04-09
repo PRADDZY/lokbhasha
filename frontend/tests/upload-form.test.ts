@@ -18,6 +18,7 @@ test('Home page owns the shared analysis overlay while UploadForm stays focused 
 
   assert.doesNotMatch(uploadFormSource, /AnalysisOverlay/)
   assert.match(homePageSource, /AnalysisOverlay/)
+  assert.match(homePageSource, /extractPdfTextInBrowser/)
   assert.match(homePageSource, /isPdfUpload/)
   assert.match(overlaySource, /Analyzing circular/i)
   assert.match(overlaySource, /Extracting text from PDF pages/i)

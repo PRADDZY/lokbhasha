@@ -19,7 +19,7 @@ type AnalyzeInput = {
 }
 
 type AnalyzeDependencies = {
-  detectGlossaryHits: (text: string) => GlossaryHit[]
+  detectGlossaryHits: (text: string) => Promise<GlossaryHit[]> | GlossaryHit[]
   lingoClient: LingoClient
 }
 
@@ -28,7 +28,7 @@ type EnrichmentDependencies = {
 }
 
 type BaselineComparisonDependencies = {
-  detectGlossaryHits: (text: string) => GlossaryHit[]
+  detectGlossaryHits: (text: string) => Promise<GlossaryHit[]> | GlossaryHit[]
   lingoClient: LingoClient
 }
 
@@ -45,7 +45,7 @@ export async function analyzeMarathiDocument(
   input: AnalyzeInput,
   dependencies: AnalyzeDependencies
 ): Promise<AnalysisCoreResult> {
-  const glossaryHits = dependencies.detectGlossaryHits(input.marathiText)
+  const glossaryHits = await dependencies.detectGlossaryHits(input.marathiText)
   const fallbackGlossaryHints = buildFallbackGlossaryHints(glossaryHits)
   const recognizedSourceLocale = await dependencies.lingoClient.recognizeLocale(input.marathiText)
   const canonicalPayload = await dependencies.lingoClient.localizeObject(
@@ -130,7 +130,7 @@ export async function buildBaselineComparison(
   input: AnalysisComparisonRequest,
   dependencies: BaselineComparisonDependencies
 ): Promise<AnalysisComparisonResult> {
-  const glossaryHits = dependencies.detectGlossaryHits(input.marathiText)
+  const glossaryHits = await dependencies.detectGlossaryHits(input.marathiText)
   const fallbackGlossaryHints = buildFallbackGlossaryHints(glossaryHits)
   const baselinePayload = await dependencies.lingoClient.localizeObject(
     { canonicalText: input.marathiText },

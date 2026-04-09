@@ -43,7 +43,7 @@ export function UploadForm({
             <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
               {selectedFile
                 ? `Selected PDF: ${selectedFile.name}`
-                : 'Digital PDFs move straight to extraction. Scanned PDFs use OCR when available.'}
+                : 'PDFs are prepared in-browser before the Cloudflare analysis pass. Scanned PDFs use OCR when text is not embedded.'}
             </p>
           </div>
 

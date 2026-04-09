@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { startTransition, useState } from 'react'
 
 import { analyzeDocument } from '@/lib/api'
+import { extractPdfTextInBrowser } from '@/lib/browser-pdf'
 import type { AnalysisCoreResult } from '@/lib/api'
 import { AnalysisOverlay } from '@/components/AnalysisOverlay'
 import { UploadForm } from '@/components/UploadForm'
@@ -42,9 +43,27 @@ export default function Home() {
     setLoadingOrigin(origin)
 
     try {
-      const result: AnalysisCoreResult = await analyzeDocument({
+      let analysisInput: {
+        file?: File | null
+        marathiText?: string
+        source?: 'pdf' | 'text'
+        extractionConfidence?: number
+      } = {
         file: input.file,
         marathiText: input.marathiText,
+      }
+
+      if (input.file) {
+        const extractedPdf = await extractPdfTextInBrowser(input.file)
+        analysisInput = {
+          marathiText: extractedPdf.text,
+          source: 'pdf',
+          extractionConfidence: extractedPdf.confidence,
+        }
+      }
+
+      const result: AnalysisCoreResult = await analyzeDocument({
+        ...analysisInput,
       })
 
       writeStoredResultSession(
