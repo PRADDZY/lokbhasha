@@ -89,3 +89,4 @@ htmlcov/
 .tox/
 .vercel
 .env*.local
+cloudflare-api/.dev.vars

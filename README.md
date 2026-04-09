@@ -9,18 +9,20 @@ This branch is aligned to a Cloudflare-first deployment target and a TestSprite-
 ## Demo
 
 - Demo video: [YouTube walkthrough](https://www.youtube.com/watch?v=8Ga9puHhpMc)
+- Live app: [lokbhasha.pages.dev](https://lokbhasha.pages.dev)
+- Live API: [lokbhasha-api.dpratik3005.workers.dev/health](https://lokbhasha-api.dpratik3005.workers.dev/health)
 - Localization engine: Lingo.dev
 - Hosting target: Cloudflare Pages + Cloudflare Workers + Cloudflare D1
 - Test focus: TestSprite MCP
 
 ## TestSprite Hackathon Track
 
-This submission is being prepared in two visible rounds so judges can see both the testing workflow and the product improvement path.
+This submission is prepared in two visible rounds so judges can see both the testing workflow and the product improvement path.
 
 | Round | Stack | Focus | Result |
 | --- | --- | --- | --- |
 | Round 1 | Current Vercel + Render stack reproduced locally | Baseline critical flows | 5/6 passed, PDF upload was the only failing path |
-| Round 2 | Cloudflare-first stack reproduced locally | Same critical flows after migration and polish | 7/7 passed |
+| Round 2 | Cloudflare Pages + Workers + D1 | Same critical flows after migration and polish | 7/7 passed |
 
 Artifacts:
 
@@ -228,8 +230,13 @@ npx wrangler deploy
 cd frontend
 npm ci
 npm run build
-npx wrangler pages deploy out --project-name <your-pages-project>
+npx wrangler pages deploy out --project-name lokbhasha
 ```
+
+Current public Cloudflare endpoints:
+
+- frontend: `https://lokbhasha.pages.dev`
+- api: `https://lokbhasha-api.dpratik3005.workers.dev`
 
 The GitHub deploy workflow in `.github/workflows/deploy.yml` is now shaped around the Cloudflare path:
 

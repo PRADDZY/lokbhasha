@@ -19505,7 +19505,7 @@ INSERT INTO glossary_meta (key, value) VALUES ('source_format', 'english_to_mara
 INSERT INTO glossary_meta (key, value) VALUES ('source_locale', 'mr');
 INSERT INTO glossary_meta (key, value) VALUES ('target_locale', 'en');
 INSERT INTO glossary_meta (key, value) VALUES ('source_hash', 'ddc929ba813c1ae99784a5678c8adc486378fd60c45a6a54ab11ed20c46246da');
-INSERT INTO glossary_meta (key, value) VALUES ('prepared_at', '2026-04-09T10:49:47.719Z');
+INSERT INTO glossary_meta (key, value) VALUES ('prepared_at', '2026-04-09T12:43:12.444Z');
 INSERT INTO glossary_meta (key, value) VALUES ('total_terms', '19495');
 INSERT INTO glossary_meta (key, value) VALUES ('custom_translation_terms', '19495');
 INSERT INTO glossary_meta (key, value) VALUES ('non_translatable_terms', '0');
