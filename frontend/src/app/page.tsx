@@ -14,6 +14,7 @@ import {
 } from '@/lib/result-session'
 
 type HomeErrorOwner = 'sample' | 'upload' | null
+const SAMPLE_PDF_ASSET_PATH = '/samples/marathi_sample.pdf'
 
 export default function Home() {
   const router = useRouter()
@@ -23,6 +24,33 @@ export default function Home() {
   const [errorOwner, setErrorOwner] = useState<HomeErrorOwner>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [loadingOrigin, setLoadingOrigin] = useState<HomeErrorOwner>(null)
+
+  async function onUseSamplePdf() {
+    setError('')
+    setErrorOwner(null)
+
+    try {
+      const response = await fetch(SAMPLE_PDF_ASSET_PATH)
+      if (!response.ok) {
+        throw new Error('The built-in sample PDF is unavailable right now.')
+      }
+
+      const pdfBlob = await response.blob()
+      const samplePdf = new File([pdfBlob], 'marathi_sample.pdf', {
+        type: 'application/pdf',
+      })
+
+      setSelectedFile(samplePdf)
+      setMarathiText('')
+    } catch (samplePdfError) {
+      const message =
+        samplePdfError instanceof Error
+          ? samplePdfError.message
+          : 'The built-in sample PDF is unavailable right now.'
+      setError(message)
+      setErrorOwner('upload')
+    }
+  }
 
   const runAnalysis = async (
     input: {
@@ -163,6 +191,7 @@ export default function Home() {
             isLoading={isLoading}
             onFileChange={setSelectedFile}
             onTextChange={setMarathiText}
+            onUseSamplePdf={onUseSamplePdf}
             onAnalyze={() => runAnalysis({ file: selectedFile, marathiText }, 'upload')}
           />
         </section>

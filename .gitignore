@@ -64,6 +64,7 @@ Thumbs.db
 # Uploads and temp files
 uploads/
 *.pdf
+!frontend/public/samples/*.pdf
 *.tmp
 
 # Large dictionary files (download separately)

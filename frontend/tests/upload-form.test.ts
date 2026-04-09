@@ -36,6 +36,8 @@ test('UploadForm keeps the PDF input explicitly labeled and automation-friendly'
   assert.match(uploadFormSource, /name="documentUpload"/)
   assert.match(uploadFormSource, /data-testid="document-upload-input"/)
   assert.match(uploadFormSource, /data-testid="analyze-document-button"/)
+  assert.match(uploadFormSource, /data-testid="use-sample-pdf-button"/)
+  assert.match(uploadFormSource, /Use sample PDF/)
   assert.match(uploadFormSource, /aria-describedby="document-upload-status"/)
   assert.match(uploadFormSource, /id="document-upload-status"/)
   assert.match(uploadFormSource, /aria-live="polite"/)
@@ -57,4 +59,10 @@ test('TestSprite PDF fixture is present for upload coverage', () => {
   const pdfFixturePath = path.resolve(currentDirPath, '../../tests/marathi_sample.pdf')
 
   assert.equal(existsSync(pdfFixturePath), true)
+})
+
+test('Built-in sample PDF asset is present for runner-safe upload coverage', () => {
+  const publicSamplePdfPath = path.resolve(currentDirPath, '../public/samples/marathi_sample.pdf')
+
+  assert.equal(existsSync(publicSamplePdfPath), true)
 })

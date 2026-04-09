@@ -5,6 +5,7 @@ type UploadFormProps = {
   isLoading: boolean
   onFileChange: (file: File | null) => void
   onTextChange: (value: string) => void
+  onUseSamplePdf: () => void
   onAnalyze: () => void
 }
 
@@ -15,6 +16,7 @@ export function UploadForm({
   isLoading,
   onFileChange,
   onTextChange,
+  onUseSamplePdf,
   onAnalyze,
 }: UploadFormProps) {
   const selectedFileLabel = selectedFile
@@ -60,6 +62,15 @@ export function UploadForm({
             >
               {selectedFileLabel}
             </p>
+            <button
+              type="button"
+              data-testid="use-sample-pdf-button"
+              disabled={isLoading}
+              onClick={onUseSamplePdf}
+              className="mt-4 inline-flex rounded-full border border-[var(--line)] bg-[var(--surface)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink)] transition hover:translate-y-[-1px] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Use sample PDF
+            </button>
           </div>
 
           <div>

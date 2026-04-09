@@ -20,3 +20,13 @@ test('Upload form exposes visible alert and stable action controls for automatio
   assert.match(source, /data-testid="upload-form-error"/)
   assert.match(source, /data-testid="analyze-document-button"/)
 })
+
+test('Home page can preload a built-in sample PDF into the upload flow', async () => {
+  const source = await readFile(homePagePath, 'utf8')
+
+  assert.match(source, /SAMPLE_PDF_ASSET_PATH/)
+  assert.match(source, /fetch\(SAMPLE_PDF_ASSET_PATH\)/)
+  assert.match(source, /new File\(/)
+  assert.match(source, /setSelectedFile/)
+  assert.match(source, /onUseSamplePdf/)
+})
