@@ -80,7 +80,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: analyze/package-lock.json
 
@@ -100,6 +100,37 @@ jobs:
         working-directory: analyze
         run: npm run check
 
+  cloudflare-api:
+    name: Cloudflare API Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: cloudflare-api/package-lock.json
+
+      - name: Install Cloudflare API dependencies
+        working-directory: cloudflare-api
+        run: npm ci
+
+      - name: Build D1 glossary seed
+        working-directory: cloudflare-api
+        run: npm run build:d1
+
+      - name: Run Cloudflare API tests
+        working-directory: cloudflare-api
+        run: npm test
+
+      - name: Type-check Cloudflare API
+        working-directory: cloudflare-api
+        run: npm run check
+
   frontend:
     name: Frontend Tests And Build
     runs-on: ubuntu-latest
@@ -111,7 +142,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 

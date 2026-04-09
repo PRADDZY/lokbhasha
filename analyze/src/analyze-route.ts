@@ -72,6 +72,9 @@ export async function handleAnalyzeFormData(
 ): Promise<AnalysisCoreResult> {
   const uploadedFile = formData.get('file')
   const marathiText = String(formData.get('marathiText') || '').trim()
+  const providedSource = String(formData.get('source') || '').trim()
+  const extractionConfidenceValue = String(formData.get('extractionConfidence') || '').trim()
+  const parsedExtractionConfidence = Number.parseFloat(extractionConfidenceValue)
 
   let source: 'pdf' | 'text' = 'text'
   let extractionConfidence: number | undefined
@@ -82,6 +85,14 @@ export async function handleAnalyzeFormData(
     source = 'pdf'
     extractionConfidence = extracted.confidence
     sourceText = extracted.text.trim()
+  } else {
+    if (providedSource === 'pdf') {
+      source = 'pdf'
+    }
+
+    if (Number.isFinite(parsedExtractionConfidence)) {
+      extractionConfidence = parsedExtractionConfidence
+    }
   }
 
   if (!sourceText) {

@@ -51,7 +51,7 @@ test('analyzeDocument posts to NEXT_PUBLIC_API_BASE_URL/analyze and expects sour
   const expected = buildExpectedCoreResult()
   let requestedUrl = ''
 
-  process.env.NEXT_PUBLIC_API_BASE_URL = 'https://lokbhasha-analyze.onrender.com'
+  process.env.NEXT_PUBLIC_API_BASE_URL = 'https://lokbhasha-api.example.workers.dev'
   globalThis.fetch = async (input) => {
     requestedUrl = String(input)
     return new Response(JSON.stringify(expected), {
@@ -62,7 +62,7 @@ test('analyzeDocument posts to NEXT_PUBLIC_API_BASE_URL/analyze and expects sour
 
   try {
     const result = await analyzeDocument({ marathiText: 'arj sadar kara' })
-    assert.equal(requestedUrl, 'https://lokbhasha-analyze.onrender.com/analyze')
+    assert.equal(requestedUrl, 'https://lokbhasha-api.example.workers.dev/analyze')
     assert.deepEqual(result, expected)
   } finally {
     if (originalBaseUrl === undefined) {
@@ -85,7 +85,7 @@ test('enrichDocument posts JSON to NEXT_PUBLIC_API_BASE_URL/enrich and returns o
   }
   const requests: Array<{ url: string; method: string; contentType: string | null; body: string }> = []
 
-  process.env.NEXT_PUBLIC_API_BASE_URL = 'https://lokbhasha-analyze.onrender.com'
+  process.env.NEXT_PUBLIC_API_BASE_URL = 'https://lokbhasha-api.example.workers.dev'
   globalThis.fetch = async (input, init) => {
     requests.push({
       url: String(input),
@@ -109,7 +109,7 @@ test('enrichDocument posts JSON to NEXT_PUBLIC_API_BASE_URL/enrich and returns o
 
     assert.deepEqual(requests, [
       {
-        url: 'https://lokbhasha-analyze.onrender.com/enrich',
+        url: 'https://lokbhasha-api.example.workers.dev/enrich',
         method: 'POST',
         contentType: 'application/json',
         body: JSON.stringify({
@@ -141,14 +141,14 @@ test('fetchGlossaryStatus reads glossary sync metadata from NEXT_PUBLIC_API_BASE
     sourceLocale: 'mr',
     targetLocale: 'en',
     authority: 'lingo_mcp',
-    detectionStore: 'sqlite',
+    detectionStore: 'd1',
     managementMode: 'mcp_only',
     syncState: 'ready',
     totalTerms: 249048,
     customTranslationTerms: 249040,
     nonTranslatableTerms: 8,
     packageHash: 'abc123',
-    runtimeArtifactPath: '/app/sqlite/glossary.sqlite3',
+    runtimeArtifactPath: 'cloudflare:d1:GLOSSARY_DB',
     lastPreparedAt: '2026-03-16T12:00:00.000Z',
     lastSyncedAt: '2026-03-16T12:10:00.000Z',
     authoritativeEngineId: 'eng_lokbhasha',
@@ -168,7 +168,7 @@ test('fetchGlossaryStatus reads glossary sync metadata from NEXT_PUBLIC_API_BASE
   }
   let requestedUrl = ''
 
-  process.env.NEXT_PUBLIC_API_BASE_URL = 'https://lokbhasha-analyze.onrender.com'
+  process.env.NEXT_PUBLIC_API_BASE_URL = 'https://lokbhasha-api.example.workers.dev'
   globalThis.fetch = async (input) => {
     requestedUrl = String(input)
     return new Response(JSON.stringify(expected), {
@@ -179,7 +179,7 @@ test('fetchGlossaryStatus reads glossary sync metadata from NEXT_PUBLIC_API_BASE
 
   try {
     const result = await fetchGlossaryStatus()
-    assert.equal(requestedUrl, 'https://lokbhasha-analyze.onrender.com/glossary-status')
+    assert.equal(requestedUrl, 'https://lokbhasha-api.example.workers.dev/glossary-status')
     assert.deepEqual(result, expected)
   } finally {
     if (originalBaseUrl === undefined) {
@@ -237,7 +237,7 @@ test('fetchQualitySummary reads quality metadata from NEXT_PUBLIC_API_BASE_URL/q
   const expected = buildExpectedQualitySummary()
   let requestedUrl = ''
 
-  process.env.NEXT_PUBLIC_API_BASE_URL = 'https://lokbhasha-analyze.onrender.com'
+  process.env.NEXT_PUBLIC_API_BASE_URL = 'https://lokbhasha-api.example.workers.dev'
   globalThis.fetch = async (input) => {
     requestedUrl = String(input)
     return new Response(JSON.stringify(expected), {
@@ -248,7 +248,7 @@ test('fetchQualitySummary reads quality metadata from NEXT_PUBLIC_API_BASE_URL/q
 
   try {
     const result = await fetchQualitySummary()
-    assert.equal(requestedUrl, 'https://lokbhasha-analyze.onrender.com/quality-summary')
+    assert.equal(requestedUrl, 'https://lokbhasha-api.example.workers.dev/quality-summary')
     assert.deepEqual(result, expected)
   } finally {
     if (originalBaseUrl === undefined) {
@@ -266,7 +266,7 @@ test('runBaselineComparison posts Marathi text and canonical English to NEXT_PUB
   const expected = buildExpectedComparisonResult()
   const requests: Array<{ url: string; method: string; contentType: string | null; body: string }> = []
 
-  process.env.NEXT_PUBLIC_API_BASE_URL = 'https://lokbhasha-analyze.onrender.com'
+  process.env.NEXT_PUBLIC_API_BASE_URL = 'https://lokbhasha-api.example.workers.dev'
   globalThis.fetch = async (input, init) => {
     requests.push({
       url: String(input),
@@ -288,7 +288,7 @@ test('runBaselineComparison posts Marathi text and canonical English to NEXT_PUB
 
     assert.deepEqual(requests, [
       {
-        url: 'https://lokbhasha-analyze.onrender.com/quality/baseline-compare',
+        url: 'https://lokbhasha-api.example.workers.dev/quality/baseline-compare',
         method: 'POST',
         contentType: 'application/json',
         body: JSON.stringify({

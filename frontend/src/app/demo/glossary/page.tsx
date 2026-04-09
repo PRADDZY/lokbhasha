@@ -1,36 +1,81 @@
+"use client"
+
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
 import { fetchGlossaryStatus, fetchLingoSetup } from '@/lib/api'
+import type { GlossarySyncStatus, LingoSetupSummary } from '@/lib/types'
 
 
-export const dynamic = 'force-dynamic'
-
-async function loadGlossaryAdminState() {
-  const [glossaryStatusResult, lingoSetupResult] = await Promise.allSettled([
-    fetchGlossaryStatus(),
-    fetchLingoSetup(),
-  ])
-
-  return {
-    glossaryStatus: glossaryStatusResult.status === 'fulfilled' ? glossaryStatusResult.value : null,
-    lingoSetup: lingoSetupResult.status === 'fulfilled' ? lingoSetupResult.value : null,
-    glossaryError:
-      glossaryStatusResult.status === 'rejected'
-        ? glossaryStatusResult.reason instanceof Error
-          ? glossaryStatusResult.reason.message
-          : 'Glossary status failed to load.'
-        : '',
-    setupError:
-      lingoSetupResult.status === 'rejected'
-        ? lingoSetupResult.reason instanceof Error
-          ? lingoSetupResult.reason.message
-          : 'Lingo setup failed to load.'
-        : '',
-  }
+type GlossaryAdminState = {
+  glossaryStatus: GlossarySyncStatus | null
+  lingoSetup: LingoSetupSummary | null
+  glossaryError: string
+  setupError: string
 }
 
-export default async function GlossaryDemoPage() {
-  const { glossaryStatus, lingoSetup, glossaryError, setupError } = await loadGlossaryAdminState()
+function GlossaryStatusCard({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
+  return (
+    <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
+      <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">{label}</p>
+      <p className="mt-3 text-lg font-semibold text-[var(--ink)]">{value}</p>
+    </div>
+  )
+}
+
+export default function GlossaryDemoPage() {
+  const [state, setState] = useState<GlossaryAdminState>({
+    glossaryStatus: null,
+    lingoSetup: null,
+    glossaryError: '',
+    setupError: '',
+  })
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadGlossaryAdminState() {
+      const [glossaryStatusResult, lingoSetupResult] = await Promise.allSettled([
+        fetchGlossaryStatus(),
+        fetchLingoSetup(),
+      ])
+
+      if (cancelled) {
+        return
+      }
+
+      setState({
+        glossaryStatus: glossaryStatusResult.status === 'fulfilled' ? glossaryStatusResult.value : null,
+        lingoSetup: lingoSetupResult.status === 'fulfilled' ? lingoSetupResult.value : null,
+        glossaryError:
+          glossaryStatusResult.status === 'rejected'
+            ? glossaryStatusResult.reason instanceof Error
+              ? glossaryStatusResult.reason.message
+              : 'Glossary status failed to load.'
+            : '',
+        setupError:
+          lingoSetupResult.status === 'rejected'
+            ? lingoSetupResult.reason instanceof Error
+              ? lingoSetupResult.reason.message
+              : 'Lingo setup failed to load.'
+            : '',
+      })
+    }
+
+    void loadGlossaryAdminState()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const { glossaryStatus, lingoSetup, glossaryError, setupError } = state
 
   return (
     <main className="min-h-screen px-4 py-8 md:px-8 md:py-10">
@@ -41,10 +86,8 @@ export default async function GlossaryDemoPage() {
               <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted)]">Hidden glossary route</p>
               <h1 className="section-title mt-3 text-4xl md:text-6xl">Lingo MCP glossary status</h1>
               <p className="mt-4 max-w-3xl text-lg leading-8 text-[var(--muted)]">
-                This is a read-only glossary page for operators and demos. The active source is
-                {' '}
-                <code>dict/19k.json</code>
-                , SQLite stays local for detection, and Lingo MCP is the management path for authoritative glossary changes.
+                This is a read-only glossary page for operators and demos. The active source is{' '}
+                <code>dict/19k.json</code>, SQLite stays local for detection, and Lingo MCP is the management path for authoritative glossary changes.
               </p>
             </div>
             <Link
@@ -65,30 +108,13 @@ export default async function GlossaryDemoPage() {
           </p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Authority</p>
-              <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
-                {glossaryStatus?.authority === 'lingo_mcp' ? 'Lingo MCP' : 'Unavailable'}
-              </p>
-            </div>
-            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Detection store</p>
-              <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
-                {glossaryStatus?.detectionStore ?? 'Loading'}
-              </p>
-            </div>
-            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Sync state</p>
-              <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
-                {glossaryStatus?.syncState ?? 'Loading'}
-              </p>
-            </div>
-            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Engine mode</p>
-              <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
-                {lingoSetup?.engine.selectionMode === 'explicit' ? 'Explicit setup' : 'Default setup'}
-              </p>
-            </div>
+            <GlossaryStatusCard label="Authority" value={glossaryStatus?.authority === 'lingo_mcp' ? 'Lingo MCP' : 'Unavailable'} />
+            <GlossaryStatusCard label="Detection store" value={glossaryStatus?.detectionStore ?? 'Loading'} />
+            <GlossaryStatusCard label="Sync state" value={glossaryStatus?.syncState ?? 'Loading'} />
+            <GlossaryStatusCard
+              label="Engine mode"
+              value={lingoSetup?.engine.selectionMode === 'explicit' ? 'Explicit setup' : 'Default setup'}
+            />
           </div>
 
           {glossaryError ? (
@@ -108,73 +134,25 @@ export default async function GlossaryDemoPage() {
           <article className="paper-panel rounded-[2rem] p-6 md:p-8">
             <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Source and package</p>
             <div className="mt-5 space-y-4">
-              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Authoritative engine</p>
-                <p className="mt-3 text-base font-semibold text-[var(--ink)]">
-                  {glossaryStatus?.authoritativeEngineName ?? 'Not recorded'}
-                </p>
-                <p className="mt-2 text-sm text-[var(--muted)]">
-                  {glossaryStatus?.authoritativeEngineId ?? 'No engine id recorded yet.'}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Active source file</p>
-                <p className="mt-3 text-base font-semibold text-[var(--ink)]">{glossaryStatus?.sourcePath ?? 'dict/19k.json'}</p>
-              </div>
-              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Runtime SQLite package</p>
-                <p className="mt-3 text-base font-semibold text-[var(--ink)]">
-                  {glossaryStatus?.runtimeArtifactPath ?? 'sqlite/glossary.sqlite3'}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Prepared locally</p>
-                <p className="mt-3 text-base font-semibold text-[var(--ink)]">
-                  {glossaryStatus?.lastPreparedAt ?? 'Not prepared'}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Last known Lingo sync</p>
-                <p className="mt-3 text-base font-semibold text-[var(--ink)]">
-                  {glossaryStatus?.lastSyncedAt ?? 'Not recorded'}
-                </p>
-              </div>
+              <GlossaryStatusCard label="Authoritative engine" value={glossaryStatus?.authoritativeEngineName ?? 'Not recorded'} />
+              <GlossaryStatusCard label="Active source file" value={glossaryStatus?.sourcePath ?? 'dict/19k.json'} />
+              <GlossaryStatusCard
+                label="Runtime glossary binding"
+                value={glossaryStatus?.runtimeArtifactPath ?? 'cloudflare:d1:GLOSSARY_DB'}
+              />
+              <GlossaryStatusCard label="Prepared locally" value={glossaryStatus?.lastPreparedAt ?? 'Not prepared'} />
+              <GlossaryStatusCard label="Last known Lingo sync" value={glossaryStatus?.lastSyncedAt ?? 'Not recorded'} />
             </div>
           </article>
 
           <article className="paper-panel rounded-[2rem] p-6 md:p-8">
             <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Glossary coverage</p>
             <div className="mt-5 space-y-4">
-              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Total terms</p>
-                <p className="mt-3 text-base font-semibold text-[var(--ink)]">
-                  {glossaryStatus ? `${glossaryStatus.totalTerms} terms` : 'Loading'}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Remote glossary count</p>
-                <p className="mt-3 text-base font-semibold text-[var(--ink)]">
-                  {glossaryStatus?.remoteGlossaryTermCount ?? 'Not recorded'}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Custom translations</p>
-                <p className="mt-3 text-base font-semibold text-[var(--ink)]">
-                  {glossaryStatus?.customTranslationTerms ?? 'Loading'}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Fallback hints</p>
-                <p className="mt-3 text-base font-semibold text-[var(--ink)]">
-                  {glossaryStatus?.fallbackMode ?? 'Unavailable'}
-                </p>
-              </div>
-              <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-                <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Target locales</p>
-                <p className="mt-3 text-base font-semibold text-[var(--ink)]">
-                  {lingoSetup ? lingoSetup.selectedTargetLocales.join(', ') : 'Loading'}
-                </p>
-              </div>
+              <GlossaryStatusCard label="Total terms" value={glossaryStatus ? `${glossaryStatus.totalTerms} terms` : 'Loading'} />
+              <GlossaryStatusCard label="Remote glossary count" value={String(glossaryStatus?.remoteGlossaryTermCount ?? 'Not recorded')} />
+              <GlossaryStatusCard label="Custom translations" value={String(glossaryStatus?.customTranslationTerms ?? 'Loading')} />
+              <GlossaryStatusCard label="Fallback hints" value={glossaryStatus?.fallbackMode ?? 'Unavailable'} />
+              <GlossaryStatusCard label="Target locales" value={lingoSetup ? lingoSetup.selectedTargetLocales.join(', ') : 'Loading'} />
             </div>
           </article>
         </section>
@@ -188,33 +166,18 @@ export default async function GlossaryDemoPage() {
           </p>
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Brand voices</p>
-              <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
-                {lingoSetup?.layers.brandVoices.status === 'ready' ? 'Active' : 'Not configured'}
-              </p>
-              <p className="mt-2 text-sm text-[var(--muted)]">
-                {lingoSetup?.layers.brandVoices.configuredCount ?? 0} configured
-              </p>
-            </div>
-            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Custom instructions</p>
-              <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
-                {lingoSetup?.layers.instructions.status === 'ready' ? 'Active' : 'Not configured'}
-              </p>
-              <p className="mt-2 text-sm text-[var(--muted)]">
-                {lingoSetup?.layers.instructions.configuredCount ?? 0} configured
-              </p>
-            </div>
-            <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-              <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">AI reviewers</p>
-              <p className="mt-3 text-lg font-semibold text-[var(--ink)]">
-                {lingoSetup?.layers.aiReviewers.status === 'ready' ? 'Active' : 'Not configured'}
-              </p>
-              <p className="mt-2 text-sm text-[var(--muted)]">
-                {lingoSetup?.layers.aiReviewers.configuredCount ?? 0} configured
-              </p>
-            </div>
+            <GlossaryStatusCard
+              label="Brand voices"
+              value={lingoSetup?.layers.brandVoices.status === 'ready' ? 'Active' : 'Not configured'}
+            />
+            <GlossaryStatusCard
+              label="Custom instructions"
+              value={lingoSetup?.layers.instructions.status === 'ready' ? 'Active' : 'Not configured'}
+            />
+            <GlossaryStatusCard
+              label="AI reviewers"
+              value={lingoSetup?.layers.aiReviewers.status === 'ready' ? 'Active' : 'Not configured'}
+            />
           </div>
         </section>
 
