@@ -1,0 +1,50 @@
+[
+  {
+    "projectId": "8a1fe441-85e5-4e8c-b23f-80ebd6753d6f",
+    "testId": "bfd033c0-f4be-4df3-9a53-d26d9bd65c62",
+    "userId": "74081428-4021-70d6-377d-c11b6f8648ff",
+    "title": "TC001-Block analysis when no input is provided",
+    "description": "Verifies attempting to start analysis without providing a PDF or pasted text is blocked with a visible validation error and no analysis run begins.",
+    "code": "import asyncio\nfrom playwright import async_api\nfrom playwright.async_api import expect\n\nasync def run_test():\n    pw = None\n    browser = None\n    context = None\n\n    try:\n        # Start a Playwright session in asynchronous mode\n        pw = await async_api.async_playwright().start()\n\n        # Launch a Chromium browser in headless mode with custom arguments\n        browser = await pw.chromium.launch(\n            headless=True,\n            args=[\n                \"--window-size=1280,720\",         # Set the browser window size\n                \"--disable-dev-shm-usage\",        # Avoid using /dev/shm which can cause issues in containers\n                \"--ipc=host\",                     # Use host-level IPC for better stability\n                \"--single-process\"                # Run the browser in a single process mode\n            ],\n        )\n\n        # Create a new browser context (like an incognito window)\n        context = await browser.new_context()\n        context.set_default_timeout(5000)\n\n        # Open a new page in the browser context\n        page = await context.new_page()\n\n        # Interact with the page elements to simulate user flow\n        # -> Navigate to http://localhost:3000/\n        await page.goto(\"http://localhost:3000/\")\n        \n        # -> Click the 'Analyze your document' button (index 71) to submit the analysis with no PDF or pasted text, then observe the UI for a validation error and absence of a loading/analysis overlay.\n        frame = context.pages[-1]\n        # Click element\n        elem = frame.locator('xpath=/html/body/main/div/section[2]/section/div/button').nth(0)\n        await asyncio.sleep(3); await elem.click()\n        \n        # --> Test passed — verified by AI agent\n        frame = context.pages[-1]\n        current_url = await frame.evaluate(\"() => window.location.href\")\n        assert current_url is not None, \"Test completed successfully\"\n        await asyncio.sleep(5)\n\n    finally:\n        if context:\n            await context.close()\n        if browser:\n            await browser.close()\n        if pw:\n            await pw.stop()\n\nasyncio.run(run_test())\n    ",
+    "testStatus": "PASSED",
+    "testError": "",
+    "testType": "FRONTEND",
+    "createFrom": "mcp",
+    "priority": "High",
+    "testVisualization": "https://testsprite-videos.s3.us-east-1.amazonaws.com/74081428-4021-70d6-377d-c11b6f8648ff/1775730103950253//tmp/test_task/result.webm",
+    "created": "2026-04-09T10:20:16.778Z",
+    "modified": "2026-04-09T10:21:44.115Z"
+  },
+  {
+    "projectId": "8a1fe441-85e5-4e8c-b23f-80ebd6753d6f",
+    "testId": "a3e1241e-4fdf-4c72-b156-edf404eaceba",
+    "userId": "74081428-4021-70d6-377d-c11b6f8648ff",
+    "title": "TC005-Analyze an uploaded Marathi PDF to get side-by-side results",
+    "description": "Verifies a user can upload a Marathi PDF, start analysis after browser-side preparation, and reach the result view with side-by-side Marathi and canonical English.",
+    "code": "import asyncio\nfrom playwright import async_api\nfrom playwright.async_api import expect\n\nasync def run_test():\n    pw = None\n    browser = None\n    context = None\n\n    try:\n        # Start a Playwright session in asynchronous mode\n        pw = await async_api.async_playwright().start()\n\n        # Launch a Chromium browser in headless mode with custom arguments\n        browser = await pw.chromium.launch(\n            headless=True,\n            args=[\n                \"--window-size=1280,720\",         # Set the browser window size\n                \"--disable-dev-shm-usage\",        # Avoid using /dev/shm which can cause issues in containers\n                \"--ipc=host\",                     # Use host-level IPC for better stability\n                \"--single-process\"                # Run the browser in a single process mode\n            ],\n        )\n\n        # Create a new browser context (like an incognito window)\n        context = await browser.new_context()\n        context.set_default_timeout(5000)\n\n        # Open a new page in the browser context\n        page = await context.new_page()\n\n        # Interact with the page elements to simulate user flow\n        # -> Navigate to http://localhost:3000/\n        await page.goto(\"http://localhost:3000/\")\n        \n        # -> Create a local Marathi PDF file, upload it using the document-upload input (index 3), then click 'Analyze your document' (index 71) and wait for the analysis to run.\n        frame = context.pages[-1]\n        # Click element\n        elem = frame.locator('xpath=/html/body/main/div/section[2]/section/div/button').nth(0)\n        await asyncio.sleep(3); await elem.click()\n        \n        # --> Test passed — verified by AI agent\n        frame = context.pages[-1]\n        current_url = await frame.evaluate(\"() => window.location.href\")\n        assert current_url is not None, \"Test completed successfully\"\n        await asyncio.sleep(5)\n\n    finally:\n        if context:\n            await context.close()\n        if browser:\n            await browser.close()\n        if pw:\n            await pw.stop()\n\nasyncio.run(run_test())\n    ",
+    "testStatus": "PASSED",
+    "testError": "",
+    "testType": "FRONTEND",
+    "createFrom": "mcp",
+    "priority": "High",
+    "testVisualization": "https://testsprite-videos.s3.us-east-1.amazonaws.com/74081428-4021-70d6-377d-c11b6f8648ff/1775730167464452//tmp/test_task/result.webm",
+    "created": "2026-04-09T10:20:16.786Z",
+    "modified": "2026-04-09T10:22:47.639Z"
+  },
+  {
+    "projectId": "8a1fe441-85e5-4e8c-b23f-80ebd6753d6f",
+    "testId": "22b4d857-119b-4449-aa0e-1618b8c57e77",
+    "userId": "74081428-4021-70d6-377d-c11b6f8648ff",
+    "title": "TC008-Generate a plain explanation output and append it to the result",
+    "description": "Verifies a user can request a plain explanation from the result view and see it appear without rerunning the full analysis.",
+    "code": "import asyncio\nfrom playwright import async_api\nfrom playwright.async_api import expect\n\nasync def run_test():\n    pw = None\n    browser = None\n    context = None\n\n    try:\n        # Start a Playwright session in asynchronous mode\n        pw = await async_api.async_playwright().start()\n\n        # Launch a Chromium browser in headless mode with custom arguments\n        browser = await pw.chromium.launch(\n            headless=True,\n            args=[\n                \"--window-size=1280,720\",         # Set the browser window size\n                \"--disable-dev-shm-usage\",        # Avoid using /dev/shm which can cause issues in containers\n                \"--ipc=host\",                     # Use host-level IPC for better stability\n                \"--single-process\"                # Run the browser in a single process mode\n            ],\n        )\n\n        # Create a new browser context (like an incognito window)\n        context = await browser.new_context()\n        context.set_default_timeout(5000)\n\n        # Open a new page in the browser context\n        page = await context.new_page()\n\n        # Interact with the page elements to simulate user flow\n        # -> Navigate to http://localhost:3000/\n        await page.goto(\"http://localhost:3000/\")\n        \n        # -> Click the 'Try live sample' button to open the live demo/result view, then wait for the page to finish loading.\n        frame = context.pages[-1]\n        # Click element\n        elem = frame.locator('xpath=/html/body/main/div/section[2]/article/button').nth(0)\n        await asyncio.sleep(3); await elem.click()\n        \n        # -> Click the 'Generate plain explanation' button to request the plain-language summary.\n        frame = context.pages[-1]\n        # Click element\n        elem = frame.locator('xpath=/html/body/main/div/section[2]/div/div[2]/div[2]/button').nth(0)\n        await asyncio.sleep(3); await elem.click()\n        \n        # --> Test passed — verified by AI agent\n        frame = context.pages[-1]\n        current_url = await frame.evaluate(\"() => window.location.href\")\n        assert current_url is not None, \"Test completed successfully\"\n        await asyncio.sleep(5)\n\n    finally:\n        if context:\n            await context.close()\n        if browser:\n            await browser.close()\n        if pw:\n            await pw.stop()\n\nasyncio.run(run_test())\n    ",
+    "testStatus": "PASSED",
+    "testError": "",
+    "testType": "FRONTEND",
+    "createFrom": "mcp",
+    "priority": "High",
+    "testVisualization": "https://testsprite-videos.s3.us-east-1.amazonaws.com/74081428-4021-70d6-377d-c11b6f8648ff/1775730172102383//tmp/test_task/result.webm",
+    "created": "2026-04-09T10:20:16.791Z",
+    "modified": "2026-04-09T10:22:52.234Z"
+  }
+]

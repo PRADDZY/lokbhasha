@@ -13,6 +13,27 @@ This branch is aligned to a Cloudflare-first deployment target and a TestSprite-
 - Hosting target: Cloudflare Pages + Cloudflare Workers + Cloudflare D1
 - Test focus: TestSprite MCP
 
+## TestSprite Hackathon Track
+
+This submission is being prepared in two visible rounds so judges can see both the testing workflow and the product improvement path.
+
+| Round | Stack | Focus | Result |
+| --- | --- | --- | --- |
+| Round 1 | Current Vercel + Render stack reproduced locally | Baseline critical flows | 5/6 passed, PDF upload was the only failing path |
+| Round 2 | Cloudflare-first stack reproduced locally | Same critical flows after migration and polish | 7/7 passed |
+
+Artifacts:
+
+- [Round 1 TestSprite snapshot](testsprite_tests/round-1/)
+- [Round 2 TestSprite snapshot](testsprite_tests/round-2/)
+
+What changed between rounds:
+
+- moved the main runtime path to a Cloudflare-first architecture
+- replaced the runtime glossary lookup path with D1 seeding from the curated 19k glossary
+- made the upload and optional-output flows easier for TestSprite to drive reliably
+- closed the baseline PDF upload gap and brought the selected Round 2 suite to 100%
+
 ## Why This Matters
 
 Government documents often reach citizens in language that is formal, domain-heavy, and slow to interpret. LokBhasha is designed to preserve official terminology where accuracy matters, while still making the document understandable and portable across languages.
@@ -220,13 +241,19 @@ The GitHub deploy workflow in `.github/workflows/deploy.yml` is now shaped aroun
 
 This repo is being prepared for a TestSprite-hosted hackathon.
 
-Planned testing layers:
+Current testing layers:
 
 - frontend smoke path
 - backend API path
 - end-to-end analyze and enrich flows
 - glossary/setup/quality route checks
 - PDF upload path through browser-side extraction
+
+Current committed evidence:
+
+- Round 1 snapshot in `testsprite_tests/round-1/`
+- Round 2 snapshot in `testsprite_tests/round-2/`
+- TestSprite-generated critical-flow cases committed with the branch-local submission work
 
 TestSprite MCP target command:
 

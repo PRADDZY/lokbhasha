@@ -1,0 +1,511 @@
+[
+  {
+    "id": "TC001",
+    "title": "Block analysis when no input is provided",
+    "description": "Verifies attempting to start analysis without providing a PDF or pasted text is blocked with a visible validation error and no analysis run begins.",
+    "category": "PDF and pasted text analysis",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Submit the analysis request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a validation error is visible indicating input is required"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the loading overlay does not appear"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC002",
+    "title": "Run the live sample and view canonical English result",
+    "description": "Verifies a user can trigger the live sample analysis from the landing page and reach the result view showing canonical English with glossary context.",
+    "category": "Live sample run",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the live sample entry point"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the loading overlay to complete"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the result view with side-by-side Marathi and canonical English displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify glossary context is displayed alongside the results"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC003",
+    "title": "View glossary context after running the live sample analysis",
+    "description": "This test verifies a user can run the live sample from the landing page and then see glossary-linked context in the result view.",
+    "category": "Glossary-linked result inspection",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Trigger the live sample run from the landing page"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the loading overlay to complete"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the result view with side-by-side source Marathi and canonical English displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify glossary-linked highlights and associated context are displayed in the result view"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC004",
+    "title": "Paste Marathi text and analyze to get side-by-side results",
+    "description": "Verifies a user can paste Marathi text on the landing page, run analysis, and reach the result view with side-by-side Marathi and canonical English.",
+    "category": "PDF and pasted text analysis",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Fill a Marathi text sample into the pasted text input"
+      },
+      {
+        "type": "action",
+        "description": "Submit the analysis request"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the loading overlay to complete"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the result view with side-by-side Marathi and canonical English displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC005",
+    "title": "Analyze an uploaded Marathi PDF to get side-by-side results",
+    "description": "Verifies a user can upload a Marathi PDF, start analysis after browser-side preparation, and reach the result view with side-by-side Marathi and canonical English.",
+    "category": "PDF and pasted text analysis",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Upload a valid PDF file using the document upload control"
+      },
+      {
+        "type": "action",
+        "description": "Submit the analysis request"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the loading overlay to complete"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the user lands on the result view with side-by-side Marathi and canonical English displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC006",
+    "title": "Generate translations into selected Indian languages without losing existing results",
+    "description": "Verifies a user with an existing result can select one or more target languages, generate translations, and see new language sections added while canonical English remains visible.",
+    "category": "On-demand follow-up outputs",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the live sample entry point"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the loading overlay to complete"
+      },
+      {
+        "type": "action",
+        "description": "Open the language selector"
+      },
+      {
+        "type": "action",
+        "description": "Select one or more target Indian languages"
+      },
+      {
+        "type": "action",
+        "description": "Request generation of the selected language outputs"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify new Indian-language output sections are displayed in the result view"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify canonical English and glossary context remain displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC007",
+    "title": "Open expanded glossary and quality context from the result view",
+    "description": "This test verifies a user can navigate from the result view to the details view and see expanded setup, glossary status, and quality context.",
+    "category": "Glossary-linked result inspection",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Trigger the live sample run from the landing page"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the loading overlay to complete"
+      },
+      {
+        "type": "action",
+        "description": "Open the details view from the result view"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the details view displays setup information, glossary status, and quality summary content"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC008",
+    "title": "Generate a plain explanation output and append it to the result",
+    "description": "Verifies a user can request a plain explanation from the result view and see it appear without rerunning the full analysis.",
+    "category": "On-demand follow-up outputs",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the live sample entry point"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the loading overlay to complete"
+      },
+      {
+        "type": "action",
+        "description": "Request the plain explanation output"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a plain explanation section is displayed in the result view"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify canonical English remains displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC009",
+    "title": "Generate key actions output and append it to the result",
+    "description": "Verifies a user can request key actions from the result view and see them appear without rerunning the full analysis.",
+    "category": "On-demand follow-up outputs",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the live sample entry point"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the loading overlay to complete"
+      },
+      {
+        "type": "action",
+        "description": "Request the key actions output"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a key actions section is displayed in the result view"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify canonical English and glossary context remain displayed"
+      }
+    ],
+    "priority": "High"
+  },
+  {
+    "id": "TC010",
+    "title": "Inspect glossary match context by hovering a highlighted term in Marathi",
+    "description": "This test verifies hovering a glossary-highlighted term in the Marathi panel reveals its glossary match and localization context.",
+    "category": "Glossary-linked result inspection",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Trigger the live sample run from the landing page"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the loading overlay to complete"
+      },
+      {
+        "type": "action",
+        "description": "Hover over a glossary-highlighted term in the Marathi panel"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a glossary match context view appears for the hovered term"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC011",
+    "title": "Inspect glossary match context by hovering a highlighted term in canonical English",
+    "description": "This test verifies hovering a glossary-highlighted term in the canonical English panel reveals its glossary match and localization context.",
+    "category": "Glossary-linked result inspection",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Trigger the live sample run from the landing page"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the loading overlay to complete"
+      },
+      {
+        "type": "action",
+        "description": "Hover over a glossary-highlighted term in the canonical English panel"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a glossary match context view appears for the hovered term"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC012",
+    "title": "Open expanded details after a live sample run",
+    "description": "Verifies a user can run the live sample and then navigate to the details view to see expanded setup/glossary/quality context.",
+    "category": "Live sample run",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the live sample entry point"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the loading overlay to complete"
+      },
+      {
+        "type": "action",
+        "description": "Click the link to open the expanded result details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the expanded details view is displayed with setup, glossary status, and quality summary sections visible"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC013",
+    "title": "Show validation when an invalid file type is uploaded",
+    "description": "Verifies uploading a non-PDF file is rejected with a visible validation error preventing analysis.",
+    "category": "PDF and pasted text analysis",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Upload a non-PDF file using the document upload control"
+      },
+      {
+        "type": "action",
+        "description": "Submit the analysis request"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a validation error is visible indicating the upload is invalid"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the loading overlay does not appear"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC014",
+    "title": "Prevent generating translations when no target language is selected",
+    "description": "Verifies the result view blocks translation generation when no target language is selected and shows a validation error.",
+    "category": "On-demand follow-up outputs",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Click the live sample entry point"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the loading overlay to complete"
+      },
+      {
+        "type": "action",
+        "description": "Open the language selector"
+      },
+      {
+        "type": "action",
+        "description": "Ensure no target language is selected"
+      },
+      {
+        "type": "action",
+        "description": "Request generation of language outputs"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify a validation error is visible indicating at least one language must be selected"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no new language output sections are added"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC015",
+    "title": "Details view loads with no prior analysis result in the current session",
+    "description": "This test verifies that opening the details view directly without running an analysis shows a deterministic empty state rather than analysis-specific content.",
+    "category": "Glossary-linked result inspection",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /result/details"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify an empty state or prompt is displayed indicating there is no analysis result to show"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify setup and glossary status sections are still accessible or a clear guidance is provided from this view"
+      }
+    ],
+    "priority": "Medium"
+  },
+  {
+    "id": "TC016",
+    "title": "Navigate from details view to the hidden glossary status page for cross-checking",
+    "description": "This test verifies a user can move from the details view to the hidden glossary status page to review glossary readiness context.",
+    "category": "Glossary-linked result inspection",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /"
+      },
+      {
+        "type": "action",
+        "description": "Trigger the live sample run from the landing page"
+      },
+      {
+        "type": "action",
+        "description": "Wait for the loading overlay to complete"
+      },
+      {
+        "type": "action",
+        "description": "Open the details view from the result view"
+      },
+      {
+        "type": "action",
+        "description": "Navigate to the hidden glossary status page from within the app navigation"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify glossary status information is displayed on the hidden glossary page"
+      }
+    ],
+    "priority": "Low"
+  },
+  {
+    "id": "TC017",
+    "title": "View the hidden glossary status page as read-only",
+    "description": "This test verifies the hidden glossary status page loads and presents glossary status information in a read-only manner.",
+    "category": "Glossary-linked result inspection",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Navigate to /demo/glossary"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify glossary status information is displayed"
+      },
+      {
+        "type": "assertion",
+        "description": "Verify no editing controls are available for modifying glossary entries"
+      }
+    ],
+    "priority": "Low"
+  }
+]
