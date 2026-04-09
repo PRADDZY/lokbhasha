@@ -89,6 +89,34 @@ test('handleAnalyzeFormData extracts pdf content before analysis', async () => {
   assert.deepEqual(result, expected)
 })
 
+test('handleAnalyzeFormData accepts browser-prepared pdf text with source metadata', async () => {
+  const formData = new FormData()
+  formData.set('marathiText', 'browser prepared text')
+  formData.set('source', 'pdf')
+  formData.set('extractionConfidence', '0.73')
+
+  const expected = {
+    ...buildExpectedCoreResult(),
+    source: 'pdf' as const,
+    marathiText: 'browser prepared text',
+    extractionConfidence: 0.73,
+  }
+
+  const result = await analyzeRoute.handleAnalyzeFormData(formData, {
+    analyzeMarathiDocument: async (input) => {
+      assert.equal(input.source, 'pdf')
+      assert.equal(input.extractionConfidence, 0.73)
+      assert.equal(input.marathiText, 'browser prepared text')
+      return expected
+    },
+    extractPdfText: async () => {
+      throw new Error('browser prepared requests should not call pdf extraction')
+    },
+  })
+
+  assert.deepEqual(result, expected)
+})
+
 test('handleAnalyzeFormData rejects empty requests', async () => {
   const formData = new FormData()
 

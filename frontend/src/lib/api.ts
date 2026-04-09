@@ -10,7 +10,7 @@ import type {
 } from './types'
 
 
-const DEFAULT_ANALYZE_API_BASE_URL = 'http://localhost:5001'
+const DEFAULT_ANALYZE_API_BASE_URL = 'http://127.0.0.1:8787'
 
 function getApiBaseUrl(): string {
   return (process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_ANALYZE_API_BASE_URL).replace(/\/$/, '')
@@ -59,6 +59,8 @@ export type {
 export async function analyzeDocument(input: {
   file?: File | null
   marathiText?: string
+  source?: 'pdf' | 'text'
+  extractionConfidence?: number
 }): Promise<AnalysisCoreResult> {
   const formData = new FormData()
   if (input.file) {
@@ -66,6 +68,12 @@ export async function analyzeDocument(input: {
   }
   if (input.marathiText?.trim()) {
     formData.append('marathiText', input.marathiText.trim())
+  }
+  if (input.source) {
+    formData.append('source', input.source)
+  }
+  if (typeof input.extractionConfidence === 'number') {
+    formData.append('extractionConfidence', String(input.extractionConfidence))
   }
 
   const response = await fetch(getAnalyzeApiUrl(), {

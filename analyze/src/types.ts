@@ -23,7 +23,7 @@ export type LingoGlossaryEntry = {
 
 export type GlossarySyncState = 'ready' | 'drift' | 'missing'
 export type GlossaryAuthority = 'lingo_mcp'
-export type GlossaryDetectionStore = 'sqlite'
+export type GlossaryDetectionStore = 'sqlite' | 'd1'
 export type GlossaryManagementMode = 'mcp_only'
 export type GlossarySourceKind = 'government_19k'
 export type GlossarySourceFormat = 'english_to_marathi_list' | 'marathi_to_english_map'
