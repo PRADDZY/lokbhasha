@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { startTransition, useState } from 'react'
 
 import { analyzeDocument } from '@/lib/api'
-import { extractPdfTextInBrowser } from '@/lib/browser-pdf'
+import { extractPdfTextInBrowser, validatePdfUpload } from '@/lib/browser-pdf'
 import type { AnalysisCoreResult } from '@/lib/api'
 import { AnalysisOverlay } from '@/components/AnalysisOverlay'
 import { UploadForm } from '@/components/UploadForm'
@@ -33,6 +33,13 @@ export default function Home() {
   ) => {
     if (origin === 'upload' && !input.file && !input.marathiText.trim()) {
       setError('Please provide a PDF or paste text before running the analysis.')
+      setErrorOwner('upload')
+      return
+    }
+
+    const validationError = input.file ? validatePdfUpload(input.file) : null
+    if (origin === 'upload' && validationError) {
+      setError(validationError)
       setErrorOwner('upload')
       return
     }

@@ -58,6 +58,17 @@ test('ResultsDisplay derives localization labels through named helpers instead o
   assert.doesNotMatch(source, /const canonicalLocaleLabel = 'English \(en\)'/)
 })
 
+test('ResultsDisplay shows visible validation and glossary context for linked terms', async () => {
+  const source = await readFile(resultsDisplayPath, 'utf8')
+
+  assert.match(source, /Please select at least one target language before requesting translations\./)
+  assert.match(source, /activeGlossaryLink/)
+  assert.match(source, /Glossary match/)
+  assert.match(source, /Canonical meaning/)
+  assert.match(source, /Source term/)
+  assert.match(source, /aria-live="polite"/)
+})
+
 test('Details page contains moved sections from ResultsDisplay', async () => {
   const source = await readFile(detailsPagePath, 'utf8')
 

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
@@ -10,6 +10,7 @@ const currentDirPath = path.dirname(currentFilePath)
 const uploadFormPath = path.resolve(currentDirPath, '../src/components/UploadForm.tsx')
 const analysisOverlayPath = path.resolve(currentDirPath, '../src/components/AnalysisOverlay.tsx')
 const homePagePath = path.resolve(currentDirPath, '../src/app/page.tsx')
+const browserPdfPath = path.resolve(currentDirPath, '../src/lib/browser-pdf.ts')
 
 test('Home page owns the shared analysis overlay while UploadForm stays focused on inputs', () => {
   const uploadFormSource = readFileSync(uploadFormPath, 'utf8')
@@ -38,4 +39,22 @@ test('UploadForm keeps the PDF input explicitly labeled and automation-friendly'
   assert.match(uploadFormSource, /aria-describedby="document-upload-status"/)
   assert.match(uploadFormSource, /id="document-upload-status"/)
   assert.match(uploadFormSource, /aria-live="polite"/)
+})
+
+test('Upload flow validates non-PDF files before browser extraction starts', () => {
+  const homePageSource = readFileSync(homePagePath, 'utf8')
+  const browserPdfSource = readFileSync(browserPdfPath, 'utf8')
+
+  assert.match(homePageSource, /validatePdfUpload/)
+  assert.match(homePageSource, /validationError/)
+  assert.match(browserPdfSource, /validatePdfUpload/)
+  assert.match(browserPdfSource, /Please upload a PDF document before running the analysis\./)
+  assert.match(browserPdfSource, /application\/pdf/)
+  assert.match(browserPdfSource, /\.pdf/i)
+})
+
+test('TestSprite PDF fixture is present for upload coverage', () => {
+  const pdfFixturePath = path.resolve(currentDirPath, '../../tests/marathi_sample.pdf')
+
+  assert.equal(existsSync(pdfFixturePath), true)
 })

@@ -3,6 +3,8 @@ export type BrowserPdfExtractionResult = {
   confidence: number
 }
 
+const PDF_MIME_TYPE = 'application/pdf'
+
 type PdfJsModule = {
   version: string
   getDocument: (options: { data: ArrayBuffer }) => { promise: Promise<PdfDocumentProxy> }
@@ -29,6 +31,20 @@ type PdfPageProxy = {
 type TesseractWorker = {
   recognize: (image: HTMLCanvasElement) => Promise<{ data: { text: string; confidence: number } }>
   terminate: () => Promise<void>
+}
+
+export function validatePdfUpload(file: File): string | null {
+  const normalizedName = file.name.trim().toLowerCase()
+  const normalizedType = file.type.trim().toLowerCase()
+  const hasPdfExtension = normalizedName.endsWith('.pdf')
+  const hasPdfMimeType =
+    normalizedType === PDF_MIME_TYPE || normalizedType === 'application/x-pdf'
+
+  if (!hasPdfExtension && !hasPdfMimeType) {
+    return 'Please upload a PDF document before running the analysis.'
+  }
+
+  return null
 }
 
 async function loadPdfJs(): Promise<PdfJsModule> {
@@ -109,6 +125,11 @@ async function runBrowserOcr(pdfDocument: PdfDocumentProxy): Promise<BrowserPdfE
 export async function extractPdfTextInBrowser(file: File): Promise<BrowserPdfExtractionResult> {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     throw new Error('PDF extraction is only available in the browser.')
+  }
+
+  const validationError = validatePdfUpload(file)
+  if (validationError) {
+    throw new Error(validationError)
   }
 
   const pdfjs = await loadPdfJs()

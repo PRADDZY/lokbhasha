@@ -17,6 +17,12 @@ export function UploadForm({
   onTextChange,
   onAnalyze,
 }: UploadFormProps) {
+  const selectedFileLabel = selectedFile
+    ? selectedFile.name.toLowerCase().endsWith('.pdf')
+      ? `Selected PDF: ${selectedFile.name}`
+      : `Selected file: ${selectedFile.name}`
+    : 'PDFs are prepared in-browser before the Cloudflare analysis pass. Scanned PDFs use OCR when text is not embedded.'
+
   return (
     <section aria-busy={isLoading} className="paper-panel rounded-[2rem] p-6 md:p-8">
       <div className="space-y-6">
@@ -52,9 +58,7 @@ export function UploadForm({
               aria-live="polite"
               className="mt-3 text-sm leading-6 text-[var(--muted)]"
             >
-              {selectedFile
-                ? `Selected PDF: ${selectedFile.name}`
-                : 'PDFs are prepared in-browser before the Cloudflare analysis pass. Scanned PDFs use OCR when text is not embedded.'}
+              {selectedFileLabel}
             </p>
           </div>
 

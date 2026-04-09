@@ -29,7 +29,8 @@ type LinkedPartProps = {
     title?: string
   }>
   activeLinkId: string | null
-  onActivate: (linkId: string | null) => void
+  onHover: (linkId: string | null) => void
+  onToggle: (linkId: string | null) => void
 }
 
 function mergeSessionResult(
@@ -51,16 +52,21 @@ function mergeSessionResult(
   }
 }
 
-function LinkedParts({ parts, activeLinkId, onActivate }: LinkedPartProps) {
+function LinkedParts({ parts, activeLinkId, onHover, onToggle }: LinkedPartProps) {
   return parts.map((part, index) =>
     part.type === 'link' ? (
       <mark
         key={`${part.linkId}-${index}`}
         title={part.title}
-        onMouseEnter={() => onActivate(part.linkId ?? null)}
-        onMouseLeave={() => onActivate(null)}
+        onMouseEnter={() => onHover(part.linkId ?? null)}
+        onMouseLeave={() => onHover(null)}
+        onFocus={() => onHover(part.linkId ?? null)}
+        onBlur={() => onHover(null)}
+        onClick={() => onToggle(part.linkId ?? null)}
+        tabIndex={0}
+        aria-pressed={part.linkId === activeLinkId}
         className={[
-          'rounded-md px-1.5 py-0.5 text-[var(--ink)] transition-colors',
+          'cursor-pointer rounded-md px-1.5 py-0.5 text-[var(--ink)] transition-colors',
           part.linkId === activeLinkId
             ? 'bg-[rgba(196,110,46,0.34)]'
             : 'bg-[rgba(141,79,42,0.18)]',
@@ -113,7 +119,8 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
   const [selectedLocales, setSelectedLocales] = useState<string[]>(
     () => getInitialSelectedLocales(result, demoMetadata)
   )
-  const [activeLinkId, setActiveLinkId] = useState<string | null>(null)
+  const [hoveredLinkId, setHoveredLinkId] = useState<string | null>(null)
+  const [pinnedLinkId, setPinnedLinkId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [loadingMode, setLoadingMode] = useState<
     'translation' | 'explanation' | 'actions' | null
@@ -126,6 +133,8 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
   })
   const loadedLocales = sessionResult.localizedText ?? {}
   const pendingLocales = selectedLocales.filter((locale) => !loadedLocales[locale])
+  const activeLinkId = pinnedLinkId ?? hoveredLinkId
+  const activeGlossaryLink = linkedState.links.find((link) => link.id === activeLinkId) ?? null
   const localizedEntries = INDIAN_LANGUAGE_OPTIONS
     .filter((option) => loadedLocales[option.value])
     .map((option) => [option.label, loadedLocales[option.value] as string] as const)
@@ -150,7 +159,8 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
     selectedLocales.length > 0
       ? `${selectedLocales.length} language${selectedLocales.length === 1 ? '' : 's'} selected`
       : 'Open language menu'
-  const translationDisabled = pendingLocales.length === 0 || loadingMode !== null
+  const translationDisabled =
+    loadingMode !== null || (selectedLocales.length > 0 && pendingLocales.length === 0)
   const translationButtonLabel =
     loadingMode === 'translation' ? 'Generating translation...' : 'Generate translation'
   const explanationReady = Boolean(sessionResult.simplifiedEnglish)
@@ -176,7 +186,13 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
   }
 
   async function requestTranslations() {
+    if (!selectedLocales.length) {
+      setError('Please select at least one target language before requesting translations.')
+      return
+    }
+
     if (!pendingLocales.length) {
+      setError('Selected languages are already available in the result.')
       return
     }
 
@@ -259,7 +275,12 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
             <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Source text</p>
             <p className="mt-2 text-sm text-[var(--muted)]">The source text stays visible for glossary-backed comparison.</p>
             <div className="mt-5 rounded-[1.5rem] bg-[var(--surface-strong)] p-5 text-lg leading-9 text-[var(--ink)]">
-              <LinkedParts parts={linkedState.marathiParts} activeLinkId={activeLinkId} onActivate={setActiveLinkId} />
+              <LinkedParts
+                parts={linkedState.marathiParts}
+                activeLinkId={activeLinkId}
+                onHover={setHoveredLinkId}
+                onToggle={(linkId) => setPinnedLinkId((current) => (current === linkId ? null : linkId))}
+              />
             </div>
           </article>
 
@@ -267,15 +288,54 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
             <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Canonical translation</p>
             <p className="mt-2 text-sm text-[var(--muted)]">The canonical output from the structured Lingo path.</p>
             <div className="mt-5 rounded-[1.5rem] bg-[var(--surface-strong)] p-5 text-lg leading-8 text-[var(--ink)]">
-              <LinkedParts parts={linkedState.englishParts} activeLinkId={activeLinkId} onActivate={setActiveLinkId} />
+              <LinkedParts
+                parts={linkedState.englishParts}
+                activeLinkId={activeLinkId}
+                onHover={setHoveredLinkId}
+                onToggle={(linkId) => setPinnedLinkId((current) => (current === linkId ? null : linkId))}
+              />
             </div>
           </article>
         </div>
 
         {linkedState.links.length ? (
-          <p className="px-2 text-sm leading-6 text-[var(--muted)]">
+          <div className="grid gap-4 px-2 lg:grid-cols-[0.9fr_1.1fr]">
+            <p className="text-sm leading-6 text-[var(--muted)]">
               Hover highlighted glossary terms to compare linked meanings across the source text and canonical translation.
-          </p>
+            </p>
+            <section
+              aria-live="polite"
+              className="rounded-[1.5rem] border border-[var(--line)] bg-[rgba(255,250,241,0.78)] p-4"
+            >
+              <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Glossary match</p>
+              {activeGlossaryLink ? (
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-[var(--muted)]">Source term</p>
+                    <p className="mt-2 text-base font-semibold text-[var(--ink)]">
+                      {activeGlossaryLink.marathiText}
+                    </p>
+                    <p className="mt-2 text-sm text-[var(--muted)]">
+                      Source occurrences: {activeGlossaryLink.marathiMatches.length}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.16em] text-[var(--muted)]">Canonical meaning</p>
+                    <p className="mt-2 text-base font-semibold text-[var(--ink)]">
+                      {activeGlossaryLink.englishMeaning}
+                    </p>
+                    <p className="mt-2 text-sm text-[var(--muted)]">
+                      Canonical occurrences: {activeGlossaryLink.englishMatches.length}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+                  Hover or click a highlighted term to inspect the linked source term and canonical meaning.
+                </p>
+              )}
+            </section>
+          </div>
         ) : null}
 
         <section className="paper-panel rounded-[2rem] p-6 md:p-8">
@@ -362,6 +422,7 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
                           type="checkbox"
                           checked={selectedLocales.includes(option.value)}
                           onChange={(event) => {
+                            setError('')
                             setSelectedLocales((current) =>
                               event.target.checked
                                 ? [...current, option.value]
