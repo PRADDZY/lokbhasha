@@ -6,3 +6,10 @@ compatibility_date = "2026-04-09"
 CORS_ALLOWED_ORIGINS = "http://localhost:3000"
 GLOSSARY_SOURCE_PATH = "dict/19k.json"
 GLOSSARY_SOURCE_FORMAT = "english_to_marathi_list"
+
+[[d1_databases]]
+binding = "GLOSSARY_DB"
+database_name = "lokbhasha-glossary"
+database_id = "00000000-0000-0000-0000-000000000000"
+preview_database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"

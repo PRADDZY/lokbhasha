@@ -165,7 +165,7 @@ export function buildD1SeedSql(
 
   for (const entry of glossaryPackage.entries) {
     statements.push(
-      `INSERT INTO glossary (marathi, english) VALUES ('${escapeSqlString(entry.sourceText)}', '${escapeSqlString(entry.targetText)}');`
+      `INSERT OR REPLACE INTO glossary (marathi, english) VALUES ('${escapeSqlString(entry.sourceText)}', '${escapeSqlString(entry.targetText)}');`
     )
   }
 

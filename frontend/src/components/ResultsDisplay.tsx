@@ -157,10 +157,10 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
   const explanationDisabled = explanationReady || loadingMode !== null
   const explanationButtonLabel =
     loadingMode === 'explanation'
-      ? 'Generating summary...'
+      ? 'Generating plain explanation...'
       : explanationReady
-        ? 'Summary ready'
-        : 'Generate summary'
+        ? 'Plain explanation ready'
+        : 'Generate plain explanation'
   const actionsReady = Boolean(sessionResult.actions)
   const actionsDisabled = actionsReady || loadingMode !== null
   const actionsButtonLabel =
@@ -385,13 +385,14 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
               </div>
 
               <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-4">
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Plain-language summary</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">Plain explanation</p>
                 <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
                   Ask for a simpler plain-language summary only when someone needs a more direct version.
                 </p>
                 <button
                   type="button"
                   onClick={requestPlainExplanation}
+                  data-testid="plain-explanation-button"
                   disabled={explanationDisabled}
                   className="mt-6 w-full rounded-full border border-[var(--line)] bg-[var(--surface)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--ink)] transition disabled:cursor-not-allowed disabled:opacity-55"
                 >
@@ -418,8 +419,11 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
         </section>
 
         {sessionResult.simplifiedEnglish ? (
-          <article className="rounded-[2rem] border border-[rgba(141,79,42,0.2)] bg-[rgba(141,79,42,0.08)] p-6 md:p-8">
-            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Plain-language summary</p>
+          <article
+            data-testid="plain-explanation-section"
+            className="rounded-[2rem] border border-[rgba(141,79,42,0.2)] bg-[rgba(141,79,42,0.08)] p-6 md:p-8"
+          >
+            <p className="text-sm uppercase tracking-[0.22em] text-[var(--muted)]">Plain explanation</p>
             <div className="mt-5 text-xl leading-9 text-[var(--ink)]">{sessionResult.simplifiedEnglish}</div>
           </article>
         ) : null}

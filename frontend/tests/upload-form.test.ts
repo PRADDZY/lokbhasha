@@ -26,3 +26,16 @@ test('Home page owns the shared analysis overlay while UploadForm stays focused 
   assert.match(overlaySource, /Matching glossary terms before the Lingo localization pass/i)
   assert.match(overlaySource, /fixed\s+inset-0/)
 })
+
+test('UploadForm keeps the PDF input explicitly labeled and automation-friendly', () => {
+  const uploadFormSource = readFileSync(uploadFormPath, 'utf8')
+
+  assert.match(uploadFormSource, /htmlFor="document-upload"/)
+  assert.match(uploadFormSource, /id="document-upload"/)
+  assert.match(uploadFormSource, /name="documentUpload"/)
+  assert.match(uploadFormSource, /data-testid="document-upload-input"/)
+  assert.match(uploadFormSource, /data-testid="analyze-document-button"/)
+  assert.match(uploadFormSource, /aria-describedby="document-upload-status"/)
+  assert.match(uploadFormSource, /id="document-upload-status"/)
+  assert.match(uploadFormSource, /aria-live="polite"/)
+})

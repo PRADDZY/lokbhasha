@@ -30,17 +30,28 @@ export function UploadForm({
 
         <div className="grid gap-4 md:grid-cols-[0.95fr_1.05fr]">
           <div className="rounded-[1.5rem] border border-dashed border-[var(--line)] bg-[rgba(255,250,241,0.78)] p-5">
-            <label className="block text-sm font-semibold uppercase tracking-[0.18em] text-[var(--muted)]">
+            <label
+              htmlFor="document-upload"
+              className="block text-sm font-semibold uppercase tracking-[0.18em] text-[var(--muted)]"
+            >
               Upload PDF
             </label>
             <input
+              id="document-upload"
+              name="documentUpload"
+              data-testid="document-upload-input"
               type="file"
               accept=".pdf"
+              aria-describedby="document-upload-status"
               disabled={isLoading}
               onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
               className="mt-4 block w-full text-sm text-[var(--muted)] file:mr-4 file:rounded-full file:border-0 file:bg-[var(--accent)] file:px-5 file:py-3 file:font-semibold file:text-white hover:file:opacity-90 disabled:opacity-60"
             />
-            <p className="mt-3 text-sm leading-6 text-[var(--muted)]">
+            <p
+              id="document-upload-status"
+              aria-live="polite"
+              className="mt-3 text-sm leading-6 text-[var(--muted)]"
+            >
               {selectedFile
                 ? `Selected PDF: ${selectedFile.name}`
                 : 'PDFs are prepared in-browser before the Cloudflare analysis pass. Scanned PDFs use OCR when text is not embedded.'}
@@ -63,7 +74,11 @@ export function UploadForm({
         </div>
 
         {error ? (
-          <div className="rounded-[1.25rem] border border-[rgba(140,55,28,0.18)] bg-[rgba(190,89,48,0.08)] px-4 py-3 text-sm text-[var(--accent)]">
+          <div
+            role="alert"
+            data-testid="upload-form-error"
+            className="rounded-[1.25rem] border border-[rgba(140,55,28,0.18)] bg-[rgba(190,89,48,0.08)] px-4 py-3 text-sm text-[var(--accent)]"
+          >
             {error}
           </div>
         ) : null}
@@ -71,6 +86,7 @@ export function UploadForm({
         <button
           type="button"
           onClick={onAnalyze}
+          data-testid="analyze-document-button"
           disabled={isLoading}
           className="w-full rounded-full bg-[var(--ink)] px-6 py-4 text-sm font-semibold uppercase tracking-[0.22em] text-white transition hover:translate-y-[-1px] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
         >

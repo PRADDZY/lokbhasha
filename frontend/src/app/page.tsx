@@ -32,7 +32,7 @@ export default function Home() {
     origin: Exclude<HomeErrorOwner, null>
   ) => {
     if (origin === 'upload' && !input.file && !input.marathiText.trim()) {
-      setError('Upload a PDF or paste source text before running the analysis.')
+      setError('Please provide a PDF or paste text before running the analysis.')
       setErrorOwner('upload')
       return
     }
@@ -141,6 +141,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => runAnalysis({ marathiText: DEMO_SAMPLE.marathiText }, 'sample')}
+              data-testid="try-live-sample-button"
               disabled={isLoading}
               className="mt-6 w-full rounded-full bg-[var(--ink)] px-6 py-4 text-sm font-semibold uppercase tracking-[0.22em] text-white transition hover:translate-y-[-1px] hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
             >
