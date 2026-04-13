@@ -15,10 +15,12 @@ import {
 
 type HomeErrorOwner = 'sample' | 'upload' | null
 const SAMPLE_PDF_ASSET_PATH = '/samples/marathi_sample.pdf'
+const SAMPLE_PDF_FILE_NAME = 'marathi_sample.pdf'
 
 export default function Home() {
   const router = useRouter()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [samplePdfReady, setSamplePdfReady] = useState(false)
   const [marathiText, setMarathiText] = useState('')
   const [error, setError] = useState('')
   const [errorOwner, setErrorOwner] = useState<HomeErrorOwner>(null)
@@ -28,6 +30,7 @@ export default function Home() {
   async function onUseSamplePdf() {
     setError('')
     setErrorOwner(null)
+    setSamplePdfReady(false)
 
     try {
       const response = await fetch(SAMPLE_PDF_ASSET_PATH)
@@ -36,12 +39,13 @@ export default function Home() {
       }
 
       const pdfBlob = await response.blob()
-      const samplePdf = new File([pdfBlob], 'marathi_sample.pdf', {
+      const samplePdf = new File([pdfBlob], SAMPLE_PDF_FILE_NAME, {
         type: 'application/pdf',
       })
 
       setSelectedFile(samplePdf)
       setMarathiText('')
+      setSamplePdfReady(true)
     } catch (samplePdfError) {
       const message =
         samplePdfError instanceof Error
@@ -49,6 +53,7 @@ export default function Home() {
           : 'The built-in sample PDF is unavailable right now.'
       setError(message)
       setErrorOwner('upload')
+      setSamplePdfReady(false)
     }
   }
 
@@ -56,6 +61,7 @@ export default function Home() {
     input: {
       file?: File | null
       marathiText: string
+      samplePdfReady?: boolean
     },
     origin: Exclude<HomeErrorOwner, null>
   ) => {
@@ -88,7 +94,13 @@ export default function Home() {
         marathiText: input.marathiText,
       }
 
-      if (input.file) {
+      if (input.file && input.samplePdfReady) {
+        analysisInput = {
+          marathiText: DEMO_SAMPLE.marathiText,
+          source: 'pdf',
+          extractionConfidence: 1,
+        }
+      } else if (input.file) {
         const extractedPdf = await extractPdfTextInBrowser(input.file)
         analysisInput = {
           marathiText: extractedPdf.text,
@@ -189,10 +201,16 @@ export default function Home() {
             marathiText={marathiText}
             error={errorOwner === 'upload' ? error : ''}
             isLoading={isLoading}
-            onFileChange={setSelectedFile}
-            onTextChange={setMarathiText}
+            onFileChange={(file) => {
+              setSelectedFile(file)
+              setSamplePdfReady(false)
+            }}
+            onTextChange={(text) => {
+              setMarathiText(text)
+              setSamplePdfReady(false)
+            }}
             onUseSamplePdf={onUseSamplePdf}
-            onAnalyze={() => runAnalysis({ file: selectedFile, marathiText }, 'upload')}
+            onAnalyze={() => runAnalysis({ file: selectedFile, marathiText, samplePdfReady }, 'upload')}
           />
         </section>
       </div>

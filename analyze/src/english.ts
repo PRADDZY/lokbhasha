@@ -10,7 +10,7 @@ const REPLACEMENTS = new Map<string, string>([
   ['hereby', 'now'],
 ])
 
-const ACTION_PATTERN = /\b(submit|apply|register|visit|contact|provide|attach|pay|collect|report)\b/i
+const ACTION_PATTERN = /\b(submit|submitted|apply|register|visit|contact|provide|attach|affix|pay|collect|report)\b/i
 const DEADLINE_PATTERN = /\b(?:deadline|before|by|on or before)\b[^.\n]*/i
 
 export function simplifyEnglishText(englishText: string): string {

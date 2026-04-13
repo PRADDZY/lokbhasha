@@ -472,7 +472,7 @@ export default function DetailsPage() {
               <div className="rounded-[1.5rem] border border-[var(--line)] bg-[var(--surface-strong)] p-5">
                 <div className="flex flex-col gap-3">
                   <p className="text-xs uppercase tracking-[0.18em] text-[var(--muted)]">Baseline comparison</p>
-                  <h3 className="text-2xl font-semibold text-[var(--ink)]">Canonical vs baseline</h3>
+                  <h3 className="text-2xl font-semibold text-[var(--ink)]">Baseline comparison results</h3>
                   <p className="text-sm text-[var(--muted)]">
                     Baseline uses the same request without glossary hints.
                   </p>

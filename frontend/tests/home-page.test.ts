@@ -30,3 +30,12 @@ test('Home page can preload a built-in sample PDF into the upload flow', async (
   assert.match(source, /setSelectedFile/)
   assert.match(source, /onUseSamplePdf/)
 })
+
+test('Home page analyzes the built-in sample PDF through deterministic demo text', async () => {
+  const source = await readFile(homePagePath, 'utf8')
+
+  assert.match(source, /samplePdfReady/)
+  assert.match(source, /DEMO_SAMPLE\.marathiText/)
+  assert.match(source, /source: 'pdf'/)
+  assert.match(source, /extractionConfidence: 1/)
+})

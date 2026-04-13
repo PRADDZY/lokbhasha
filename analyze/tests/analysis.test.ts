@@ -236,6 +236,45 @@ test('generateAnalysisEnrichment can derive actions without returning a plain ex
   ])
 })
 
+test('generateAnalysisEnrichment extracts action items from Lingo canonical government wording', async () => {
+  const lingoClient: LingoClient = {
+    runtime: {
+      engineSelectionMode: 'implicit_default',
+      engineId: null,
+    },
+    async recognizeLocale() {
+      throw new Error('core translation should not run during enrichment')
+    },
+    async localizeObject() {
+      throw new Error('locale translation should not run for actions-only requests')
+    },
+  }
+
+  const result = await generateAnalysisEnrichment(
+    {
+      englishCanonical:
+        'The application should be submitted to the Taluk Education Officer by the date 25/04/2026. It is necessary to affix the student record and the school seal along with the application.',
+      requestedLocales: [],
+      includePlainExplanation: false,
+      includeActions: true,
+    },
+    { lingoClient }
+  )
+
+  assert.deepEqual(result.actions, [
+    {
+      action: 'The application should be submitted to the Taluk Education Officer by the date 25/04/2026',
+      deadline: 'by the date 25/04/2026',
+      requirement: 'The application should be submitted to the Taluk Education Officer by the date 25/04/2026',
+    },
+    {
+      action: 'It is necessary to affix the student record and the school seal along with the application',
+      deadline: null,
+      requirement: 'It is necessary to affix the student record and the school seal along with the application',
+    },
+  ])
+})
+
 test('buildBaselineComparison reruns the same structured localization request without glossary hints', async () => {
   const glossaryHits: GlossaryHit[] = [
     {

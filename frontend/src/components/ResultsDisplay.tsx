@@ -171,7 +171,7 @@ export function ResultsDisplay({ result, demoMetadata = null }: ResultsDisplayPr
       : explanationReady
         ? 'Plain explanation ready'
         : 'Generate plain explanation'
-  const actionsReady = Boolean(sessionResult.actions)
+  const actionsReady = Boolean(sessionResult.actions?.length)
   const actionsDisabled = actionsReady || loadingMode !== null
   const actionsButtonLabel =
     loadingMode === 'actions'

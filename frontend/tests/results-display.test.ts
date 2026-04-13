@@ -69,6 +69,12 @@ test('ResultsDisplay shows visible validation and glossary context for linked te
   assert.match(source, /aria-live="polite"/)
 })
 
+test('ResultsDisplay only marks action items ready when action text exists', async () => {
+  const source = await readFile(resultsDisplayPath, 'utf8')
+
+  assert.match(source, /const actionsReady = Boolean\(sessionResult\.actions\?\.length\)/)
+})
+
 test('Details page contains moved sections from ResultsDisplay', async () => {
   const source = await readFile(detailsPagePath, 'utf8')
 
@@ -85,6 +91,7 @@ test('Details page contains moved sections from ResultsDisplay', async () => {
   assert.match(source, /Quality verification/)
   assert.match(source, /Quality checks/)
   assert.match(source, /Baseline comparison/)
+  assert.match(source, /Baseline comparison results/)
   assert.match(source, /fetchGlossaryStatus/)
   assert.match(source, /fetchLingoSetup/)
   assert.match(source, /fetchQualitySummary/)
