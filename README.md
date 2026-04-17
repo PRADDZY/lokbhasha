@@ -57,18 +57,18 @@ Government documents often reach citizens in language that is formal, domain-hea
 
 ## TestSprite-Guided Quality Work
 
-TestSprite was used as the primary product-testing driver for the Cloudflare version of LokBhasha. The workflow covered the live sample path, PDF analysis, pasted-text analysis, result persistence, optional localized outputs, details-page quality panels, glossary surfaces, and validation states.
+TestSprite was used as the primary product-testing driver for the Cloudflare version of LokBhasha. The workflow covered live sample flow, PDF analysis, pasted-text analysis, result persistence, optional localized outputs, details-page quality panels, glossary surfaces, and validation states.
 
-| Evidence | Result | What it changed |
+| Evidence | Result | What it improved |
 | --- | ---: | --- |
-| Targeted migration smoke runs | 7/7 selected flows passed | Confirmed the PDF upload path and optional-output flows after Cloudflare migration polish. |
-| Full frontend E2E sweep | 16/20 tests passed | Exercised the production static export on `localhost:3000` against the live Cloudflare Worker API. |
-| Current report | [Open report](testsprite_tests/testsprite-mcp-test-report.md) | Documents generated-test mismatches and the remaining backend endpoint testing note. |
+| Round 1 baseline run | 5/6 passed | Exposed an upload-flow reliability gap in a critical user path. |
+| Round 2 validation run | 7/7 passed | Confirmed the upload and optional-output flow fixes after Cloudflare migration polish. |
+| Final full-suite run (`TC001`-`TC020`) | 20/20 passed | Validated end-to-end stability for current frontend + backend flows. |
+| Current report | [Open report](testsprite_tests/testsprite-mcp-test-report.md) | Consolidates generated tests and latest run outcomes. |
 
-> [!NOTE]
-> The current four failed TestSprite cases are classified in the report as generated-plan assumption mismatches, not confirmed application crashes. They should be revised in TestSprite or intentionally turned into product requirements before rerunning unchanged.
+![All TestSprite tests passed](docs/testpass.png)
 
-The current TestSprite sweep directly influenced the project by tightening the browser-driven upload flow, clarifying optional-output persistence, validating result-detail quality panels, and separating frontend E2E coverage from Worker endpoint coverage. Backend endpoint tests should be run separately against the live or local Worker service rather than the static frontend server.
+This testing cycle directly drove product fixes in upload flow handling, result-route and empty-state behavior, and baseline/optional-output flow reliability.
 
 <details>
 <summary>Run the TestSprite MCP server</summary>
